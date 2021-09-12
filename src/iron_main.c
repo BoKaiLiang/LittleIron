@@ -1,42 +1,26 @@
 #include "iron.h"
 
-// #include <stdio.h>
+#define WND_W 800
+#define WND_H 600
 
 int main() {
 
-    GLFWwindow* window;
-
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
-
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
+    // Init the window
+    ResT res = CreateWindow(WND_W, WND_H, "Little Iron");
+    if (res == RES_ERROR_CREATE_WINDOW) {
+        ReleaseWindow();
+        return RES_ERROR_CREATE_WINDOW;
     }
 
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
+    // Game loop
+    while (IsWindowRunning()) {
+        StartScene();
 
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        // glClear(GL_COLOR_BUFFER_BIT);
 
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
+        EndScene();
     }
 
-    glfwTerminate();
-    return 0;
-    
+    ReleaseWindow();
 
     return 0;
 }
