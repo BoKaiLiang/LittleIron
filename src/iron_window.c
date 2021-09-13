@@ -2,7 +2,13 @@
 
 #include <stdio.h>
 
+#define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
+
+// #define GLAD_GL_IMPLEMENTATION
+#include "glad/gl.h"
+
+#include "iron_util.h"
 
 // static struct: 
 // -- only show in this module, can be seen as 'private' variable.
@@ -24,13 +30,15 @@ ResT CreateWindow(int w, int h, const char* title) {
         printf("Failed to init glfw.");
         return RES_ERROR_CREATE_WINDOW;
     }
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     WINDOW.wnd = glfwCreateWindow(w, h, title, NULL, NULL);
     if (WINDOW.wnd == NULL) {
         printf("Failed to create glfw window.");
         return RES_ERROR_CREATE_WINDOW;
     }
-
     glfwMakeContextCurrent(WINDOW.wnd);
 
     glfwSetKeyCallback(WINDOW.wnd, WindowKeyCallback);      // handle key input
@@ -57,7 +65,10 @@ void CloseWindow(void) {
 }
 
 // [iron_window] first state in game loop, refresh the scene
-void StartScene() {
+void StartScene(Color clear_color) {
+    glClear(GL_COLOR_BUFFER_BIT);
+    V4f colorv = ColorToVec4f(clear_color);
+    glClearColor(colorv.r, colorv.g, colorv.b, colorv.a);
 }
 
 // [iron_window] last state in game loop, store scene data in this frame

@@ -20,6 +20,7 @@ add_executable( # 標記執行黨和原始碼
 
 add_subdirectory(external/glfw) # 引用由glfw建置的lib
 include_directories(external/glfw/include)
+include_directories(external/)
 
 # 如果編譯器是mscv++
 # ref: https://dotblogs.com.tw/thkaw/2013/12/11/133462

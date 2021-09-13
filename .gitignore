@@ -53,3 +53,4 @@ dkms.conf
 
 # Other (for this project...)
 /build
+/.vscode

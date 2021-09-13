@@ -3,6 +3,8 @@
 #define WND_W 800
 #define WND_H 600
 
+#define COLOR_PURPLE ((Color){ 106, 13, 173, 255 })
+
 int main() {
 
     // Init the window
@@ -12,9 +14,11 @@ int main() {
         return RES_ERROR_CREATE_WINDOW;
     }
 
+    CreateRenderer();
+
     // Game loop
     while (IsWindowRunning()) {
-        StartScene();
+        StartScene(COLOR_PURPLE);
 
 
         EndScene();

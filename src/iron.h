@@ -4,5 +4,6 @@
 #include "iron_types.h"
 
 #include "iron_window.h"
+#include "iron_render.h"
 
 #endif // _IRON_H_

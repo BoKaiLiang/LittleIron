@@ -16,7 +16,7 @@ int IsWindowRunning(void);
 void CloseWindow(void);
 
 // [iron_window] first state in game loop, refresh the scene
-void StartScene();
+void StartScene(Color clear_color);
 
 // [iron_window] last state in game loop, store scene data in this frame
 void EndScene();
