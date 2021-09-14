@@ -9,4 +9,7 @@ ResT CreateRenderer();
 // [iron_render] create/initialize 2d renderer
 void ReleaseRenderer();
 
+// [iron_render] TEST: draw a simple rectangle...
+void DrawFirstRectangle(Color c);
+
 #endif // _IRON_RENDER_H_

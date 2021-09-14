@@ -3,6 +3,7 @@
 #define WND_W 800
 #define WND_H 600
 
+#define COLOR_WHITE ((Color){ 255, 255, 255, 255 })
 #define COLOR_PURPLE ((Color){ 106, 13, 173, 255 })
 
 int main() {
@@ -14,17 +15,24 @@ int main() {
         return RES_ERROR_CREATE_WINDOW;
     }
 
-    CreateRenderer();
+    ResT res1 = CreateRenderer();
+    if (res == RES_ERROR_CREATE_WINDOW) {
+        ReleaseWindow();
+        ReleaseRenderer();
+        return RES_ERROR_CREATE_WINDOW;
+    }
 
     // Game loop
     while (IsWindowRunning()) {
-        StartScene(COLOR_PURPLE);
+        StartScene(COLOR_WHITE);
 
+        DrawFirstRectangle(COLOR_PURPLE);
 
         EndScene();
     }
 
     ReleaseWindow();
+    ReleaseRenderer();
 
     return 0;
 }

@@ -3,6 +3,8 @@
 
 #include "iron_types.h"
 
+#include "iron_asset.h"
+
 #include "iron_window.h"
 #include "iron_render.h"
 
