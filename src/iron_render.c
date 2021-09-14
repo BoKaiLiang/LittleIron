@@ -95,3 +95,8 @@ void DrawFirstRectangle(Color c) {
 
 	glBindVertexArray(0);
 }
+
+// [iron_render] TEST: draw texture
+void DrawFirstTexture(Texture* texture) {
+	// TODO...
+}

@@ -22,11 +22,16 @@ int main() {
         return RES_ERROR_CREATE_WINDOW;
     }
 
+    Texture tex;
+    ResT res2 = LoadTextureFile(&tex, "good_image");
+    // TODO: handle error
+
     // Game loop
     while (IsWindowRunning()) {
         StartScene(COLOR_WHITE);
 
-        DrawFirstRectangle(COLOR_PURPLE);
+        // DrawFirstRectangle(COLOR_PURPLE);
+        DrawFirstTexture(&tex);
 
         EndScene();
     }

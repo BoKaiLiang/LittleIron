@@ -152,3 +152,14 @@ ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragmen
 void ReleaseShader(Shader shader) {
     glDeleteProgram(shader.id);
 }
+
+
+// [iron_asset] load image file and store to opengl texture
+ResT LoadTextureFile(Texture* texture, const char* file_name) {
+	// TODO...
+}
+
+// [iron_asset] release texture
+void ReleaseTexture(Texture* texture) {
+	// TODO...
+}

@@ -12,4 +12,7 @@ void ReleaseRenderer();
 // [iron_render] TEST: draw a simple rectangle...
 void DrawFirstRectangle(Color c);
 
+// [iron_render] TEST: draw texture
+void DrawFirstTexture(Texture* texture);
+
 #endif // _IRON_RENDER_H_

@@ -16,7 +16,7 @@ static struct {
     GLFWwindow* wnd;
 } WINDOW;
 
-// [iron_window] callback function for glfw window to handle our keuboard input
+// [iron_window] callback function for glfw window to handle our keyboard input
 // -- offical doc: https://www.glfw.org/docs/3.3/input_guide.html#input_key
 static void WindowKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 

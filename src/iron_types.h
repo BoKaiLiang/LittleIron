@@ -47,5 +47,10 @@ typedef struct Shader {
     int attribs_locations[MAX_SHADER_ATTTRIBS];
 } Shader;
 
+typedef struct Texture {
+    unsigned int id;
+    int w, h;
+    int fmt;
+} Texture;
 
 #endif // _IRON_TYPES_H_
