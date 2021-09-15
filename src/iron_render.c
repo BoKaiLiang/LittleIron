@@ -55,6 +55,9 @@ ResT CreateRenderer() {
         return RES_ERROR_LOAD_GLAD;
     }
 
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     // Load default shader
     ResT load_shader_res = LoadShaderCode(&RENDER_2D_CONTEXT.default_shader,
         DEFAULT_2D_VERTEX_SHADER_CODE, 

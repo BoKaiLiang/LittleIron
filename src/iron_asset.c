@@ -125,6 +125,8 @@ ResT LoadTextureFile(Texture* texture, const char* file_name) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	stbi_image_free(pixels);
+
 	return RES_SUCCESS;
 }
 
