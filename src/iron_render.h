@@ -13,6 +13,6 @@ void ReleaseRenderer();
 void DrawFirstRectangle(Color c);
 
 // [iron_render] TEST: draw texture
-void DrawFirstTexture(Texture* texture);
+void DrawFirstTexture(Texture* texture, Color c);
 
 #endif // _IRON_RENDER_H_

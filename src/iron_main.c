@@ -9,35 +9,40 @@
 int main() {
 
     // Init the window
-    ResT res = CreateWindow(WND_W, WND_H, "Little Iron");
-    if (res == RES_ERROR_CREATE_WINDOW) {
+    ResT create_wnd_res = CreateWindow(WND_W, WND_H, "Little Iron");
+    if (create_wnd_res != RES_SUCCESS) {
         ReleaseWindow();
-        return RES_ERROR_CREATE_WINDOW;
+        return create_wnd_res;
     }
 
-    ResT res1 = CreateRenderer();
-    if (res == RES_ERROR_CREATE_WINDOW) {
+    ResT create_rdr_res = CreateRenderer();
+    if (create_rdr_res != RES_SUCCESS) {
         ReleaseWindow();
         ReleaseRenderer();
-        return RES_ERROR_CREATE_WINDOW;
+        return create_rdr_res;
     }
 
     Texture tex;
-    ResT res2 = LoadTextureFile(&tex, "good_image");
-    // TODO: handle error
+    ResT load_tex_res = LoadTextureFile(&tex, "assets/kenney_animalpackredux/rabbit.png");
+    if (load_tex_res != RES_SUCCESS) {
+        ReleaseWindow();
+        ReleaseRenderer();
+        return load_tex_res;
+    }
 
     // Game loop
     while (IsWindowRunning()) {
         StartScene(COLOR_WHITE);
 
-        // DrawFirstRectangle(COLOR_PURPLE);
-        DrawFirstTexture(&tex);
+        DrawFirstTexture(&tex, COLOR_WHITE);
 
         EndScene();
     }
 
-    ReleaseWindow();
+    ReleaseTexture(&tex);
+
     ReleaseRenderer();
+    ReleaseWindow();
 
     return 0;
 }

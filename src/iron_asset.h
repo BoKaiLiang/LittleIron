@@ -7,7 +7,7 @@
 ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragment_code);
 
 // [iron_asset] release shader
-void ReleaseShader(Shader shader);
+void ReleaseShader(Shader* shader);
 
 // [iron_asset] load image file and store to opengl texture
 ResT LoadTextureFile(Texture* texture, const char* file_name);
