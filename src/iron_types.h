@@ -6,6 +6,14 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 
+typedef enum LogType {
+    LOG_INFO,
+    LOG_WARN,
+    LOG_ERROR,
+
+    MAX_LOG_TYPE,
+} LogT;
+
 typedef enum ResultType {
     RES_SUCCESS                     = 0,
 

@@ -45,4 +45,10 @@ V2f GetMousePosition();
 // [iron_window] get mouse scroll roll
 float GetScrollYOffset();
 
+// [iron_window] get time
+float GetTime();
+
+// [iron_window] get delta time
+float GetDeltaTime();
+
 #endif // _IRON_WINDOW_H_

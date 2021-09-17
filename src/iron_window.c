@@ -25,6 +25,11 @@ static struct {
         V2f cursor_pos;
         float scroll_offset;
     } Mouse;
+
+    struct {
+        float current_time;
+        float delta_time;
+    } Time;
 } WINDOW;
 
 // offical doc: https://www.glfw.org/docs/3.3/input_guide.html#input_key
@@ -102,6 +107,9 @@ void StartScene(Color clear_color) {
     glClear(GL_COLOR_BUFFER_BIT);
     V4f colorv = ColorToVec4f(clear_color);
     glClearColor(colorv.r, colorv.g, colorv.b, colorv.a);
+
+    // time
+    WINDOW.Time.current_time = (float)glfwGetTime();
 }
 
 // [iron_window] last state in game loop, store scene data in this frame
@@ -123,6 +131,9 @@ void EndScene() {
     WINDOW.Mouse.scroll_offset = 0.0f;
 
     glfwPollEvents();
+
+    // time
+    WINDOW.Time.delta_time = (float)glfwGetTime() - WINDOW.Time.current_time;
 }
 
 // [iron_window] check is key pressed
@@ -175,6 +186,16 @@ V2f GetMousePosition() {
 // [iron_window] get mouse scroll roll
 float GetScrollYOffset() {
     return WINDOW.Mouse.scroll_offset;
+}
+
+// [iron_window] get time
+float GetTime() {
+    return (float)glfwGetTime();
+}
+
+// [iron_window] get delta time
+float GetDeltaTime() {
+    return WINDOW.Time.delta_time;
 }
 
 // ---------------------------------- //

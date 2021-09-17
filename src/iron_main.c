@@ -38,14 +38,18 @@ int main() {
 
         // input test
 
+        // LogInfo("delta time: %.6f", GetDeltaTime());
+
         if (IsKeyPressed(KEY_W))
-            printf("you pressed 'w'\n");
+            LogInfo("you pressed 'w'");
         if (IsKeyReleased(KEY_W))
             printf("you released 'w'\n");
         // if (IsKeyUp(KEY_W))
         //    printf("'w' is up\n");
         // if (IsKeyDown(KEY_W))
         //    printf("'w' is down\n");
+
+        LogInfo("Color purple: %s", ColorToString(COLOR_PURPLE));
 
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             printf("you clicked left button\n");
@@ -55,7 +59,7 @@ int main() {
         V2f cursor = GetMousePosition();
         V2f tmp_cursor;
         if (cursor.x != tmp_cursor.x && cursor.y != tmp_cursor.y) {
-            printf("cursor pos: (%.3f, %.3f)\n", cursor.x, cursor.y);
+            // LogInfo("cursor pos: %s", V2fToString(cursor));
             tmp_cursor = cursor;
         }
 
