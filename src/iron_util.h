@@ -22,4 +22,7 @@ const char* V4fToString(V4f v);
 // [iron_util] Color to string
 const char* ColorToString(Color c);
 
+// [iron_util] Mat4 to string
+const char* Mat4ToString(Mat4 m);
+
 #endif // _IRON_UTIL_H_

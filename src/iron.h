@@ -5,6 +5,7 @@
 
 #include "iron_util.h"
 
+#include "iron_math.h"
 #include "iron_asset.h"
 #include "iron_window.h"
 #include "iron_render.h"

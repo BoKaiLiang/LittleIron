@@ -1,6 +1,7 @@
 #include "iron_window.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
@@ -80,6 +81,9 @@ ResT CreateWindow(int w, int h, const char* title) {
     }
     WINDOW.Mouse.cursor_pos = (V2f){ 0.0f, 0.0f };
     WINDOW.Mouse.scroll_offset = 0.0f;
+
+    // math... random
+    srand((time_t)NULL);
 
     return RES_SUCCESS;
 }

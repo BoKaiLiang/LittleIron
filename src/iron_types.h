@@ -6,6 +6,36 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 
+#define COLOR_NONE ((Color){ 0, 0, 0, 0 })
+#define COLOR_WHITE ((Color){ 255, 255, 255, 255 })
+#define COLOR_BLACK ((Color){ 0, 0, 0, 255 })
+#define COLOR_GRAY ((Color){ 128, 128, 128, 255 })
+#define COLOR_RED ((Color){ 255, 0, 0, 255 })
+#define COLOR_PINK ((Color){ 255, 102, 178, 255 })
+#define COLOR_ORANGE ((Color){ 255, 128, 0, 255 })
+#define COLOR_YELLOW ((Color){ 255, 255, 0, 255 })
+#define COLOR_GREEN ((Color){ 0, 255, 0, 255 })
+#define COLOR_BLUE ((Color){ 0, 0, 255, 255 })
+#define COLOR_CYAN ((Color){ 0, 255, , 255 })
+#define COLOR_PURPLE ((Color){ 106, 13, 173, 255 })
+
+#define V2F_ZERO ((V2f){ 0.0f, 0.0f})
+#define V2F_ONE ((V2f){ 1.0f, 1.0f})
+#define V2F_X ((V2f){ 1.0f, 0.0f})
+#define V2F_Y ((V2f){ 0.0f, 1.0f})
+
+#define V4F_ZERO ((V4f){ 0.0f, 0.0f, 0.0f, 0.0f })
+#define V4F_ONE ((V4f){ 1.0f, 1.0f, 1.0f, 1.0f })
+#define V4F_X ((V4f){ 1.0f, 0.0f, 0.0f, 0.0f })
+#define V4F_Y ((V4f){ 0.0f, 1.0f, 0.0f, 0.0f})
+#define V4F_Z ((V4f){ 0.0f, 0.0f, 1.0f, 0.0f})
+#define V4F_W ((V4f){ 0.0f, 0.0f, 0.0f, 1.0f})
+
+#define MAT4_IDENTITY ((Mat4){1.0f, 0.0f, 0.0f, 0.0f,		\
+							  0.0f, 1.0f, 0.0f, 0.0f,		\
+							  0.0f, 0.0f, 1.0f, 0.0f,		\
+							  0.0f, 0.0f, 0.0f, 1.0f})
+
 typedef enum LogType {
     LOG_INFO,
     LOG_WARN,
@@ -47,6 +77,14 @@ typedef struct Vec4f {
         struct { float r, g, b, a; };
     };
 } V4f;
+
+typedef struct Mat4x4 {
+    union {
+        struct { V4f v0, v1, v2, v3; };
+        float ary2d[4][4];
+        float unit[16];
+    };
+} Mat4;
 
 typedef enum ShaderAttribType {
     SHADER_ATTRIB_VEC2_POS,

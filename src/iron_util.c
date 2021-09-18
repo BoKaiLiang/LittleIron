@@ -82,3 +82,24 @@ const char* ColorToString(Color c) {
 
     return buffer;
 }
+
+// [iron_util] Mat4 to string
+const char* Mat4ToString(Mat4 m) {
+    char* buffer = STR_BUFFERS[BUFFER_INDEX];
+    memset(buffer, 0, MAX_BUFFFERS_CHAR_LEN);
+
+    sprintf_s(buffer, MAX_BUFFFERS_CHAR_LEN, 
+            "\n\t\t\t\t|%.4f, %.4f, %.4f, %.4f|\n\t\t\t\t|%.4f, %.4f, %.4f, %.4f|\n\t\t\t\t|%.4f, %.4f, %.4f, %.4f|\n\t\t\t\t|%.4f, %.4f, %.4f, %.4f|\n", 
+            m.unit[0], m.unit[4], m.unit[8], m.unit[12],
+            m.unit[1], m.unit[5], m.unit[9], m.unit[13],
+            m.unit[2], m.unit[6], m.unit[10], m.unit[14],
+            m.unit[3], m.unit[7], m.unit[11], m.unit[15]
+    );
+
+    BUFFER_INDEX += 1;
+    if (BUFFER_INDEX >= MAX_BUFFERS_COUNT) {
+        BUFFER_INDEX = 0;
+    }
+
+    return buffer;
+}
