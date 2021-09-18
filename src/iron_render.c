@@ -51,7 +51,7 @@ static const unsigned int INDICES[] = {
 ResT CreateRenderer() {
     // Init glad
     if (!gladLoadGL(glfwGetProcAddress)) {
-        printf("Failed to load glad.");
+		LogError("Failed to load glad.");
         return RES_ERROR_LOAD_GLAD;
     }
 
@@ -64,7 +64,7 @@ ResT CreateRenderer() {
         DEFAULT_2D_FRAGMENT_SHADER_CODE);
 
     if (load_shader_res != RES_SUCCESS) {
-        printf("Failed to load default shader\n");
+        LogError("Failed to load default shader");
         return load_shader_res;
     }
 

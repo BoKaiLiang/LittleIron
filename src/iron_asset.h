@@ -1,6 +1,7 @@
 #ifndef _IRON_ASSET_H_
 #define _IRON_ASSET_H_
 
+#include "iron_util.h"
 #include "iron_types.h"
 
 // [iron_asset] load shader text content for creating shader program

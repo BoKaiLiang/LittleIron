@@ -20,7 +20,7 @@ ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragmen
 	glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
 		glGetShaderInfoLog(vertex_shader, 512, NULL, info_log);
-		printf("ERROR::SHADER::VERTEX::COMPILATION_FAILED:\n%s\n", info_log);
+		LogError("Failed to compile \"vertex\" shader, see error log:\n%s", info_log);
         return RES_ERROR_LOAD_VERTEX_SHADER;
 	}
 	// fragment shader
@@ -31,7 +31,7 @@ ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragmen
 	glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
 		glGetShaderInfoLog(fragment_shader, 512, NULL, info_log);
-		printf("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED:\n%s\n", info_log);
+		LogError("Failed to compile \"fragment\" shader, see error log:\n%s", info_log);
         return RES_ERROR_LOAD_FRAGMENT_SHADER;
 	}
 	// link shaders
@@ -43,7 +43,7 @@ ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragmen
 	glGetProgramiv(shader->id, GL_LINK_STATUS, &success);
 	if (!success) {
 		glGetProgramInfoLog(shader->id, 512, NULL, info_log);
-		printf("ERROR::SHADER::PROGRAM::LINKING_FAILED:\n%s", info_log);
+		LogError("Failed to linked shader program, see error log:\n%s", info_log);
         return RES_ERROR_CREATE_SHADER_PROGRAM;
 	}
 	glDeleteShader(vertex_shader);
@@ -51,27 +51,15 @@ ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragmen
 
 	// Get shader's attribute, uniform location
 	int pos_location = glGetAttribLocation(shader->id, "_Pos");
-	if (pos_location < 0) {
-		return RES_ERROR_GET_SHADER_ATTRIBUTE;
-	}
 	shader->attribs_locations[SHADER_ATTRIB_VEC2_POS] = pos_location;
 
 	int texcoord_location = glGetAttribLocation(shader->id, "_Texcoords");
-	if (texcoord_location < 0) {
-		return RES_ERROR_GET_SHADER_ATTRIBUTE;
-	}
 	shader->attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD] = texcoord_location;
 
 	int color_location = glGetUniformLocation(shader->id, "_Color");
-	if (color_location < 0) {
-		return RES_ERROR_GET_SHADER_UNIFORM;
-	}
 	shader->attribs_locations[SHADER_ATTRIB_VEC4_COLOR] = color_location;
 
 	int texture_location = glGetUniformLocation(shader->id, "_Texture2D");
-	if (texture_location < 0) {
-		return RES_ERROR_GET_SHADER_ATTRIBUTE;
-	}
 	shader->attribs_locations[SHADER_ATTRIB_SAMPLER2D_TEXTURE] = texcoord_location;
 
     return RES_SUCCESS;
@@ -91,7 +79,7 @@ ResT LoadTextureFile(Texture* texture, const char* file_name) {
 	unsigned char* pixels = stbi_load(file_name, &texture->w, &texture->h, &channels, 0);
 	if (pixels == NULL) {
 		stbi_image_free(pixels);
-		printf("Failed to load image: %s\n", file_name);
+		LogError("Failed to load image, it file name and path: %s", file_name);
 		return RES_ERROR_LOAD_IMAGE_FILE;
 	}
 
@@ -125,6 +113,7 @@ ResT LoadTextureFile(Texture* texture, const char* file_name) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	// free the pixel data
 	stbi_image_free(pixels);
 
 	return RES_SUCCESS;

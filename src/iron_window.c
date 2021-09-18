@@ -50,7 +50,7 @@ static void MouseScrollCallback(GLFWwindow* window, double xpox, double ypos);
 // [iron_window] create window
 ResT CreateWindow(int w, int h, const char* title) {
     if (!glfwInit()) {
-        printf("Failed to init glfw.");
+        LogError("Failed to init glfw.")
         return RES_ERROR_CREATE_WINDOW;
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -59,7 +59,7 @@ ResT CreateWindow(int w, int h, const char* title) {
 
     WINDOW.wnd = glfwCreateWindow(w, h, title, NULL, NULL);
     if (WINDOW.wnd == NULL) {
-        printf("Failed to create glfw window.");
+        LogError("Failed to create glfw window.")
         return RES_ERROR_CREATE_WINDOW;
     }
     glfwMakeContextCurrent(WINDOW.wnd);
