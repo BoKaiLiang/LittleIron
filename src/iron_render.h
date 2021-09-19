@@ -10,9 +10,9 @@ ResT CreateRenderer();
 void ReleaseRenderer();
 
 // [iron_render] TEST: draw a simple rectangle...
-void DrawFirstRectangle(Color c);
+void DrawRectangle(Color c);
 
 // [iron_render] TEST: draw texture
-void DrawFirstTexture(Texture* texture, Color c);
+void DrawTexture(Texture texture, Color c);
 
 #endif // _IRON_RENDER_H_

@@ -41,9 +41,8 @@ int main() {
     while (IsWindowRunning()) {
         StartScene(COLOR_WHITE);
 
-        // input test
-
-        DrawFirstTexture(&tex, COLOR_WHITE);
+        // DrawTexture(tex, COLOR_WHITE);
+        DrawRectangle(COLOR_PURPLE);
 
         EndScene();
     }

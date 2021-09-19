@@ -30,7 +30,10 @@ static const char* DEFAULT_2D_FRAGMENT_SHADER_CODE = "#version 330 core\n"
 "}\n\0";
 
 static struct {
+	unsigned vbo, vao, ibo;
+
     Shader default_shader;
+	Texture default_texture;
 } RENDER_2D_CONTEXT;
 
 //-------------vertices data------------- 
@@ -68,57 +71,16 @@ ResT CreateRenderer() {
         return load_shader_res;
     }
 
-    return RES_SUCCESS;    
-}
+	// init vertex buffer object, vertex array object and index buffer object
+	glGenVertexArrays(1, &RENDER_2D_CONTEXT.vao);
+	glBindVertexArray(RENDER_2D_CONTEXT.vao);
 
-// [iron_render] create/initialize 2d renderer
-void ReleaseRenderer() {
-    ReleaseShader(&RENDER_2D_CONTEXT.default_shader);
-}
-
-// [iron_render] draw a simple rectangle...
-void DrawFirstRectangle(Color c) {
-
-	unsigned int vbo, vao, ibo;
-
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
+	glGenBuffers(1, &RENDER_2D_CONTEXT.vbo);
+	glBindBuffer(GL_ARRAY_BUFFER, RENDER_2D_CONTEXT.vbo);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), VERTICES, GL_STATIC_DRAW);
 
-	glGenBuffers(1, &ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(INDICES), INDICES, GL_STATIC_DRAW);
-
-	glVertexAttribPointer(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_POS], 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_POS]);
-
-	glUseProgram(RENDER_2D_CONTEXT.default_shader.id);
-
-
-	V4f v = ColorToVec4f(c);
-	glUniform4f(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC4_COLOR], v.r, v.g, v.b, v.a);
-
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-	glBindVertexArray(0);
-}
-
-// [iron_render] TEST: draw texture
-void DrawFirstTexture(Texture* texture, Color c) {
-	unsigned int vbo, vao, ibo;
-
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(VERTICES), VERTICES, GL_STATIC_DRAW);
-
-	glGenBuffers(1, &ibo);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+	glGenBuffers(1, &RENDER_2D_CONTEXT.ibo);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, RENDER_2D_CONTEXT.ibo);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(INDICES), INDICES, GL_STATIC_DRAW);
 
 	// set position attribute
@@ -129,6 +91,58 @@ void DrawFirstTexture(Texture* texture, Color c) {
 	glVertexAttribPointer(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD], 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
     glEnableVertexAttribArray(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD]);
 
+	glBindVertexArray(0);
+
+	// create default texture, a pixel 1x1 white squad
+	unsigned char white_pixel[4] = { 255, 255, 255, 255 };
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glGenTextures(1, &RENDER_2D_CONTEXT.default_texture.id);
+	glBindTexture(GL_TEXTURE_2D, RENDER_2D_CONTEXT.default_texture.id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white_pixel);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+    return RES_SUCCESS;    
+}
+
+// [iron_render] create/initialize 2d renderer
+void ReleaseRenderer() {
+    ReleaseShader(&RENDER_2D_CONTEXT.default_shader);
+}
+
+// [iron_render] draw a simple rectangle...
+void DrawRectangle(Color c) {
+
+	glBindVertexArray(RENDER_2D_CONTEXT.vao);
+
+	glUseProgram(RENDER_2D_CONTEXT.default_shader.id);
+
+	V4f v = ColorToVec4f(c);
+	glUniform4f(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC4_COLOR], v.r, v.g, v.b, v.a);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, RENDER_2D_CONTEXT.default_texture.id);
+
+	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindVertexArray(0);
+}
+
+// [iron_render] TEST: draw texture
+void DrawTexture(Texture texture, Color c) {
+	glBindVertexArray(RENDER_2D_CONTEXT.vao);
+
 	glUseProgram(RENDER_2D_CONTEXT.default_shader.id);
 
 	// set shader color
@@ -136,7 +150,7 @@ void DrawFirstTexture(Texture* texture, Color c) {
 	glUniform4f(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC4_COLOR], v.r, v.g, v.b, v.a);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, texture->id);
+	glBindTexture(GL_TEXTURE_2D, texture.id);
 
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
