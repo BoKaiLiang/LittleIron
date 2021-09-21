@@ -6,6 +6,8 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 
+#define PI 3.14159265359
+
 #define COLOR_NONE ((Color){ 0, 0, 0, 0 })
 #define COLOR_WHITE ((Color){ 255, 255, 255, 255 })
 #define COLOR_BLACK ((Color){ 0, 0, 0, 255 })
@@ -91,6 +93,7 @@ typedef enum ShaderAttribType {
     SHADER_ATTRIB_VEC2_TEXCOORD,
     SHADER_ATTRIB_VEC4_COLOR,
     SHADER_ATTRIB_SAMPLER2D_TEXTURE,
+    SHADER_ATTRIB_MAT4_MVP,
 
     MAX_SHADER_ATTTRIBS,
 } ShaderAttribT;

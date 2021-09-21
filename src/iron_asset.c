@@ -60,7 +60,10 @@ ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragmen
 	shader->attribs_locations[SHADER_ATTRIB_VEC4_COLOR] = color_location;
 
 	int texture_location = glGetUniformLocation(shader->id, "_Texture2D");
-	shader->attribs_locations[SHADER_ATTRIB_SAMPLER2D_TEXTURE] = texcoord_location;
+	shader->attribs_locations[SHADER_ATTRIB_SAMPLER2D_TEXTURE] = texture_location;
+
+	int mvp_location = glGetUniformLocation(shader->id, "_MVP");
+	shader->attribs_locations[SHADER_ATTRIB_MAT4_MVP] = mvp_location;
 
     return RES_SUCCESS;
 }

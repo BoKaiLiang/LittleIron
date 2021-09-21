@@ -15,6 +15,9 @@ int IsWindowRunning(void);
 // [iron_window] close window
 void CloseWindow(void);
 
+// [iron_window] get window height and weight
+V2f GetWindowWH();
+
 // [iron_window] first state in game loop, refresh the scene
 void StartScene(Color clear_color);
 

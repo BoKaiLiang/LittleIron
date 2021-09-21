@@ -28,21 +28,24 @@ int main() {
         ReleaseRenderer();
         return load_tex_res;
     }
+    LogInfo("Texture data: %d, %d, %d", tex.id, tex.w, tex.h);
 
-    V2f v = V2fAdd(V2F_X, V2F_Y);
-    LogInfo("v = %s", V2fToString(v));
-
-    LogInfo("Vector 4 Y axis: %s", V4fToString(V4F_Y));
-
-    Mat4 m = MAT4_IDENTITY;
-    LogInfo("Matrix: %s", Mat4ToString(m));
+    V2f pos = { 100.0f, 100.0f };
+    V2f pos1 = { 450.0f, 200.0f };
+    V2f size = { 50.0f, 50.0f };
+    float rotate = 45.0f;
 
     // Game loop
     while (IsWindowRunning()) {
-        StartScene(COLOR_WHITE);
+        StartScene(COLOR_BLACK);
 
-        // DrawTexture(tex, COLOR_WHITE);
-        DrawRectangle(COLOR_PURPLE);
+        BeginRendering();
+
+        DrawTexture(tex, pos1, size, 0.0f, COLOR_WHITE);
+
+        DrawRectangle(pos, size, rotate, COLOR_PURPLE);
+
+        EndRendering();
 
         EndScene();
     }

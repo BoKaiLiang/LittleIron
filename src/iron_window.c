@@ -43,6 +43,8 @@ static void MouseButtonCallback(GLFWwindow* window, int button, int action, int 
 static void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos);
 // [iron_window] callback function for glfw window to handle mouse scroll yoffset
 static void MouseScrollCallback(GLFWwindow* window, double xpox, double ypos);
+// [iron_widnow] callcak function when resize window size
+static void FramebufferSizeCallback(GLFWwindow* window, int w, int h);
 
 // ---------------------------------- //
 //      Functions implementaion       //
@@ -69,6 +71,7 @@ ResT CreateWindow(int w, int h, const char* title) {
     glfwSetMouseButtonCallback(WINDOW.wnd, MouseButtonCallback);
     glfwSetCursorPosCallback(WINDOW.wnd, CursorPositionCallback);
     glfwSetScrollCallback(WINDOW.wnd, MouseScrollCallback);
+    glfwSetFramebufferSizeCallback(WINDOW.wnd, FramebufferSizeCallback);
 
     for (int i = 0; i < MAX_KEY_CODE; i++) {
         WINDOW.Keyboard.key_current_state[i] = 0;
@@ -104,6 +107,13 @@ int IsWindowRunning(void) {
 // [iron_window] close window
 void CloseWindow(void) {
     glfwSetWindowShouldClose(WINDOW.wnd, 1);
+}
+
+// [iron_window] get window height and weight
+V2f GetWindowWH() {
+    int w, h;
+    glfwGetWindowSize(WINDOW.wnd, &w, &h);
+    return (V2f){ (float)w, (float)h };
 }
 
 // [iron_window] first state in game loop, refresh the scene
@@ -241,4 +251,9 @@ static void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 // [iron_window] callback function for glfw window to handle mouse scroll yoffset
 static void MouseScrollCallback(GLFWwindow* window, double xpox, double ypos) {
     WINDOW.Mouse.scroll_offset = (float)ypos;
+}
+
+// [iron_widnow] callcak function when resize window size
+static void FramebufferSizeCallback(GLFWwindow* window, int w, int h) {
+    glViewport(0, 0, w, h);
 }

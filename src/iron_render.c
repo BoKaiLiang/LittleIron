@@ -10,13 +10,16 @@
 #include "iron_types.h"
 #include "iron_asset.h"
 #include "iron_util.h"
+#include "iron_math.h"
+#include "iron_window.h"
 
 static const char* DEFAULT_2D_VERTEX_SHADER_CODE = "#version 330 core\n"
 "in vec2 _Pos;\n"
 "in vec2 _Texcoords;\n"
 "out vec2 Texcoords;\n"
+"uniform mat4 _MVP;\n"
 "void main() {\n"
-"   gl_Position = vec4(_Pos, 0.0, 1.0);\n"
+"   gl_Position = _MVP * vec4(_Pos, 0.0, 1.0);\n"
 "   Texcoords = _Texcoords;\n"
 "}\n\0";
 
@@ -34,15 +37,17 @@ static struct {
 
     Shader default_shader;
 	Texture default_texture;
+
+	Mat4 projection_mat;
 } RENDER_2D_CONTEXT;
 
 //-------------vertices data------------- 
 static const float VERTICES[] = {
-		0.5f,  0.5f, 1.0f, 1.0f,	// top right
-     	0.5f, -0.5f, 1.0f, 0.0f, 	// bottom right
-    	-0.5f, -0.5f, 0.0f, 0.0f, 	// bottom left
-    	-0.5f,  0.5f, 0.0f, 1.0f	// top left 
-	};
+	0.5f,  0.5f, 1.0f, 1.0f,	// top right
+ 	0.5f, -0.5f, 1.0f, 0.0f, 	// bottom right
+	-0.5f, -0.5f, 0.0f, 0.0f, 	// bottom left
+	-0.5f, 0.5f, 0.0f, 1.0f	// top left 
+};
 
 static const unsigned int INDICES[] = {
 	0, 1, 3,   
@@ -95,6 +100,9 @@ ResT CreateRenderer() {
 
 	// create default texture, a pixel 1x1 white squad
 	unsigned char white_pixel[4] = { 255, 255, 255, 255 };
+	RENDER_2D_CONTEXT.default_texture.w = 1;
+	RENDER_2D_CONTEXT.default_texture.h = 1;
+	RENDER_2D_CONTEXT.default_texture.gl_fmt = TEX_FMT_RGBA;
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -120,12 +128,38 @@ void ReleaseRenderer() {
     ReleaseShader(&RENDER_2D_CONTEXT.default_shader);
 }
 
+// [iron_render] start the rendering state
+void BeginRendering() {
+	V2f window_sz = GetWindowWH();
+
+	// (0, 0) start at top left
+	RENDER_2D_CONTEXT.projection_mat = Mat4Ortho(0.0f, window_sz.x, window_sz.y, 0.0f, -1.0f, 1.0f);
+}
+
+// [iron_render] end the rendering state
+void EndRendering() {
+	
+}
+
 // [iron_render] draw a simple rectangle...
-void DrawRectangle(Color c) {
+void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
 
 	glBindVertexArray(RENDER_2D_CONTEXT.vao);
 
 	glUseProgram(RENDER_2D_CONTEXT.default_shader.id);
+
+	// set mvp matrix
+	Mat4 mvp_matrix = MAT4_IDENTITY;
+
+	// translate > rotate > scale
+	mvp_matrix = Mat4Translate(mvp_matrix, pos.x, pos.y);
+	mvp_matrix = Mat4EulerRotate(mvp_matrix, angle);
+	mvp_matrix = Mat4Scale(mvp_matrix, sz.x, sz.y);
+
+	// model * projection
+ 	mvp_matrix = Mat4MulMat4(RENDER_2D_CONTEXT.projection_mat, mvp_matrix);
+
+	glUniformMatrix4fv(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_MAT4_MVP], 1, GL_FALSE, mvp_matrix.unit);
 
 	V4f v = ColorToVec4f(c);
 	glUniform4f(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_VEC4_COLOR], v.r, v.g, v.b, v.a);
@@ -140,10 +174,25 @@ void DrawRectangle(Color c) {
 }
 
 // [iron_render] TEST: draw texture
-void DrawTexture(Texture texture, Color c) {
+void DrawTexture(Texture texture, V2f pos, V2f sz, float angle, Color c) {
+
 	glBindVertexArray(RENDER_2D_CONTEXT.vao);
 
 	glUseProgram(RENDER_2D_CONTEXT.default_shader.id);
+
+	// set mvp matrix
+	Mat4 mvp_matrix = MAT4_IDENTITY;
+
+	// translate > rotate > scale
+	mvp_matrix = Mat4Translate(mvp_matrix, pos.x, pos.y);
+	mvp_matrix = Mat4EulerRotate(mvp_matrix, angle);
+	mvp_matrix = Mat4Scale(mvp_matrix, texture.w, texture.h);
+
+	// model * projection
+ 	mvp_matrix = Mat4MulMat4(RENDER_2D_CONTEXT.projection_mat, mvp_matrix);
+
+	// set mvp matrix
+	glUniformMatrix4fv(RENDER_2D_CONTEXT.default_shader.attribs_locations[SHADER_ATTRIB_MAT4_MVP], 1, GL_FALSE, mvp_matrix.unit);
 
 	// set shader color
 	V4f v = ColorToVec4f(c);
