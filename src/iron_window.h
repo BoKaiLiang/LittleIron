@@ -48,6 +48,9 @@ V2f GetMousePosition();
 // [iron_window] get mouse scroll roll
 float GetScrollYOffset();
 
+// [iron_window] set limit frame rate
+void SetTargetFPS(int fps);
+
 // [iron_window] get time
 float GetTime();
 

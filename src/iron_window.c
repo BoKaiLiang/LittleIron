@@ -28,7 +28,9 @@ static struct {
     } Mouse;
 
     struct {
+        float target_time;
         float current_time;
+        float previous_time;
         float delta_time;
     } Time;
 } WINDOW;
@@ -85,6 +87,11 @@ ResT CreateWindow(int w, int h, const char* title) {
     WINDOW.Mouse.cursor_pos = (V2f){ 0.0f, 0.0f };
     WINDOW.Mouse.scroll_offset = 0.0f;
 
+    // time
+    WINDOW.Time.previous_time = 0.0f;
+    WINDOW.Time.current_time = 0.0f;
+    WINDOW.Time.target_time = 0.0f;
+
     // math... random
     srand((time_t)NULL);
 
@@ -123,7 +130,9 @@ void StartScene(Color clear_color) {
     glClearColor(colorv.r, colorv.g, colorv.b, colorv.a);
 
     // time
+    WINDOW.Time.previous_time = WINDOW.Time.current_time;
     WINDOW.Time.current_time = (float)glfwGetTime();
+    WINDOW.Time.delta_time = WINDOW.Time.current_time - WINDOW.Time.previous_time;
 }
 
 // [iron_window] last state in game loop, store scene data in this frame
@@ -145,9 +154,6 @@ void EndScene() {
     WINDOW.Mouse.scroll_offset = 0.0f;
 
     glfwPollEvents();
-
-    // time
-    WINDOW.Time.delta_time = (float)glfwGetTime() - WINDOW.Time.current_time;
 }
 
 // [iron_window] check is key pressed
@@ -200,6 +206,10 @@ V2f GetMousePosition() {
 // [iron_window] get mouse scroll roll
 float GetScrollYOffset() {
     return WINDOW.Mouse.scroll_offset;
+}
+
+void SetTargetFPS(int fps) {
+    WINDOW.Time.target_time = 1.0f / (float)fps;
 }
 
 // [iron_window] get time
