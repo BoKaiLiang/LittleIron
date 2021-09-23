@@ -11,6 +11,8 @@
 
 #include "iron_util.h"
 
+#define MIN_FPS 30
+
 // static struct: 
 // -- only show in this module, can be seen as 'private' variable.
 static struct {
@@ -31,7 +33,9 @@ static struct {
         float target_time;
         float current_time;
         float previous_time;
-        float delta_time;
+        float frame_time;
+        float update_time;
+        float render_time;
     } Time;
 } WINDOW;
 
@@ -88,9 +92,9 @@ ResT CreateWindow(int w, int h, const char* title) {
     WINDOW.Mouse.scroll_offset = 0.0f;
 
     // time
-    WINDOW.Time.previous_time = 0.0f;
-    WINDOW.Time.current_time = 0.0f;
-    WINDOW.Time.target_time = 0.0f;
+    WINDOW.Time.previous_time = (float)glfwGetTime();
+    WINDOW.Time.current_time = (float)glfwGetTime();
+    WINDOW.Time.target_time = (float)(1.0 / MIN_FPS);
 
     // math... random
     srand((time_t)NULL);
@@ -129,10 +133,10 @@ void StartScene(Color clear_color) {
     V4f colorv = ColorToVec4f(clear_color);
     glClearColor(colorv.r, colorv.g, colorv.b, colorv.a);
 
-    // time
-    WINDOW.Time.previous_time = WINDOW.Time.current_time;
+    // update time
     WINDOW.Time.current_time = (float)glfwGetTime();
-    WINDOW.Time.delta_time = WINDOW.Time.current_time - WINDOW.Time.previous_time;
+    WINDOW.Time.update_time = WINDOW.Time.current_time - WINDOW.Time.previous_time;
+    WINDOW.Time.previous_time = WINDOW.Time.current_time;
 }
 
 // [iron_window] last state in game loop, store scene data in this frame
@@ -154,6 +158,30 @@ void EndScene() {
     WINDOW.Mouse.scroll_offset = 0.0f;
 
     glfwPollEvents();
+
+    // render time
+    WINDOW.Time.current_time = (float)glfwGetTime();
+    WINDOW.Time.render_time = WINDOW.Time.current_time - WINDOW.Time.previous_time;
+    WINDOW.Time.previous_time = WINDOW.Time.current_time;
+
+    WINDOW.Time.frame_time = WINDOW.Time.render_time + WINDOW.Time.update_time;
+
+    if (WINDOW.Time.frame_time < WINDOW.Time.target_time) {
+        float wait_time = WINDOW.Time.target_time - WINDOW.Time.frame_time;
+
+        // wait time
+        float start_wait_time = glfwGetTime();
+        float end_wait_time = 0.0f;
+        while ((end_wait_time - start_wait_time) < wait_time) {
+            end_wait_time = glfwGetTime();
+        }
+
+        WINDOW.Time.current_time = (float)glfwGetTime();
+        float extra_time = WINDOW.Time.current_time - WINDOW.Time.previous_time;
+        WINDOW.Time.previous_time = WINDOW.Time.current_time;
+
+        WINDOW.Time.frame_time += extra_time;
+    }
 }
 
 // [iron_window] check is key pressed
@@ -219,7 +247,7 @@ float GetTime() {
 
 // [iron_window] get delta time
 float GetDeltaTime() {
-    return WINDOW.Time.delta_time;
+    return WINDOW.Time.frame_time;
 }
 
 // ---------------------------------- //

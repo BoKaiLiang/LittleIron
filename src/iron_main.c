@@ -38,7 +38,7 @@ int main() {
     Entity e;
     e.pos.x = 0.0f;
     e.pos.y = 300.0f;
-    e.speed.x = 300.0f;
+    e.speed.x = 150.0f;
     e.speed.y = 0.0f;
     e.c = COLOR_PURPLE;
     
@@ -49,33 +49,35 @@ int main() {
 
     V2f wnd_sz =  GetWindowWH();
 
-    int fps_count = 0;
-    float time_count = 0.0f;
+    SetTargetFPS(10);
+    
+    float current_time = GetTime();
+    float previous_time = GetTime();
+    float time_elapsed = 0.0f;
 
-    SetTargetFPS(60);
+    int test_count = 0;
 
     // Game loop
     while (IsWindowRunning()) {
-#if 0
-        if ((time_count += GetDeltaTime()) >= 1.0f) {
-            time_count = 0.0f;
-            LogInfo("FPS: %d", fps_count);
-            fps_count = 0;
-        }
-#endif
+        
+        if (e.pos.x > 800.0f) {
+            current_time = GetTime();
+            time_elapsed = current_time - previous_time;
+            previous_time = current_time;
 
-        LogInfo("Ddelta time: %f", GetDeltaTime());
+            LogInfo("Time elapsed: %f", time_elapsed);
+            e.pos.x = 0.0f;
+        }
+
+        e.pos = V2fAdd(e.pos, V2fScalef(e.speed, GetDeltaTime()));
 
         StartScene(COLOR_BLACK);
-
         BeginRendering();
 
-        
+        DrawRectangle(e.pos, size, 0.0f, e.c);
 
         EndRendering();
-
         EndScene();
-        fps_count += 1;
     }
 
     ReleaseTexture(&tex);
