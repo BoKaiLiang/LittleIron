@@ -15,6 +15,7 @@ typedef struct {
 
     V2f vert_pos[4];
     V2f norm_axis[4];
+    V2f edges[4];
 } Entity;
 
 static void CalcVerticesPos(Entity* e) {
@@ -50,27 +51,34 @@ static void CalcVerticesPos(Entity* e) {
 }
 
 static void CalcEdgesNorm(Entity* e) {
-    V2f edges[4];
-    edges[0] = V2fSub(e->vert_pos[0], e->vert_pos[1]);
-    edges[1] = V2fSub(e->vert_pos[1], e->vert_pos[2]);
-    edges[2] = V2fSub(e->vert_pos[2], e->vert_pos[3]);
-    edges[3] = V2fSub(e->vert_pos[3], e->vert_pos[0]);
+    e->edges[0] = V2fSub(e->vert_pos[0], e->vert_pos[1]); // 0: ( 237.5000, 237.5000 ) 1: ( 162.5000, 237.5000 ) -> (-75, 0) -> (0, 75) -> (0, 1)
+    e->edges[1] = V2fSub(e->vert_pos[1], e->vert_pos[2]);
+    e->edges[2] = V2fSub(e->vert_pos[2], e->vert_pos[3]);
+    e->edges[3] = V2fSub(e->vert_pos[3], e->vert_pos[0]);
 
-#if 0
+#if 1
     for (int i = 0; i < 4; i++) {
-        LogInfo("Edge No %d: %s", (i + 1), V2fToString(edges[i]));
+        LogInfo("Edge No %d: %s", (i + 1), V2fToString(e->edges[i]));
     }
 #endif
 
     for ( int i = 0 ; i < 4; i++ ) {
-        e->norm_axis[i].x = -edges[i].y;
-        e->norm_axis[i].y = edges[i].x;
+        // e->norm_axis[i].x = e->pos.x - e->edges[i].y;
+        // e->norm_axis[i].y = e->pos.y + e->edges[i].x;
+        V2f normal = { -e->edges[i].y, e->edges[i].x  };
+        e->norm_axis[i] = V2fNorm(normal);
     }
+
+#if 1
+    for (int i = 0; i < 4; i++) {
+        LogInfo("Normal No %d: %s", (i + 1), V2fToString(e->norm_axis[i]));
+    }
+#endif
 }
 
 static float CalcProj(V2f ori, V2f proj_on) {
     float scalar = V2fDot(ori, proj_on);
-    return scalar / V2fLen(proj_on);
+    return scalar;
 }
 
 typedef struct Bound {
@@ -78,9 +86,8 @@ typedef struct Bound {
 } Bound;
 
 static Bound CalcMinMaxVertexProj(Entity* e, V2f proj_on) {
-    Bound res = { 0.0f, 0.0f };
-
-    for (int i = 0; i < 4; i++) {
+    Bound res = { CalcProj(e->vert_pos[0], proj_on), CalcProj(e->vert_pos[0], proj_on) };
+    for (int i = 1; i < 4; i++) {
         float proj = CalcProj(e->vert_pos[i], proj_on);
 
         if (res.max < proj) {
@@ -127,7 +134,7 @@ int main() {
     box.c = COLOR_WHITE;
     box.size.x = 200.0f;
     box.size.y = 200.0f;
-    box.rotate_deg = 45.0f;
+    box.rotate_deg = 0.0f;
     CalcVerticesPos(&box);
     CalcEdgesNorm(&box);
 
@@ -139,27 +146,52 @@ int main() {
     p.c = COLOR_WHITE;
     p.size.x = 75.0f;
     p.size.y = 75.0f;
-    p.rotate_deg = 45.0f;
+    p.rotate_deg = 0.0f;
     CalcVerticesPos(&p);
     CalcEdgesNorm(&p);
 
+    SetTargetFPS(120);
 
-    SetTargetFPS(60);
+    V2f debug_point_sz = { 8.0f, 8.0f };
 
     // Game loop
     while (IsWindowRunning()) {
 
+        bool move_player = false;
+        bool move_box = false;
+
         float dt = GetDeltaTime();
         if (IsKeyDown(KEY_RIGHT)) {
             p.pos.x += p.speed.x * dt;
+            move_player = true;
         } else if (IsKeyDown(KEY_LEFT)) {
             p.pos.x -= p.speed.x * dt;
+            move_player = true;
         }
 
         if (IsKeyDown(KEY_DOWN)) {
             p.pos.y += p.speed.y * dt;
+            move_player = true;
         } else if (IsKeyDown(KEY_UP)) {
             p.pos.y -= p.speed.y * dt;
+            move_player = true;
+        }
+
+        // rotate
+        if (IsKeyDown(KEY_E)) {
+            p.rotate_deg += 3.0f;
+            if (p.rotate_deg >= 360.0f) {
+                p.rotate_deg = 0.0f;
+            }
+            move_player = true;
+        }
+
+        if (IsKeyDown(KEY_Q)) {
+            box.rotate_deg += 3.0f;
+            if (box.rotate_deg >= 360.0f) {
+                box.rotate_deg = 0.0f;
+            }
+            move_box = true;
         }
 
 #if 0
@@ -184,49 +216,88 @@ int main() {
         }
 #endif
 
+
         // SAT
         // FAILED!! result is not correct
-        CalcVerticesPos(&p);
-        CalcEdgesNorm(&p);
+#if 1
+        if (move_player) {
+            CalcVerticesPos(&p);
+            CalcEdgesNorm(&p);
+        }
 
-        bool separate_axis_found = false;
+        if (move_box) {
+            CalcVerticesPos(&box);
+            CalcEdgesNorm(&box);
+        }
+
+        
+        bool player_separate_axis_found = false;
+        bool box_separate_axis_found = false;
+
+
 
         // iterate player rect edge normals
         for (int i = 0; i < 4; i++) {
             Bound player_bound = CalcMinMaxVertexProj(&p, p.norm_axis[i]);
             Bound box_bound = CalcMinMaxVertexProj(&box, p.norm_axis[i]);
 
-            if (box_bound.min > player_bound.max || box_bound.max < player_bound.min) {
-                separate_axis_found = true;
+            // LogInfo("[player] player min and max = (%f, %f)", player_bound.min, player_bound.max)
+            // LogInfo("[player] box min and max = (%f, %f)", box_bound.min, box_bound.max)
+
+            if (box_bound.min > player_bound.max || player_bound.min > box_bound.max) {
+                player_separate_axis_found = true;
+                // LogInfo("PLAYER DEBUG!!!");
             }
         }
 
         // iterate box rect edge normals
-        if (!separate_axis_found) {
-           for (int i = 0; i < 4; i++) {
-                Bound player_bound = CalcMinMaxVertexProj(&p, box.norm_axis[i]);
-                Bound box_bound = CalcMinMaxVertexProj(&box, box.norm_axis[i]);
+        
+        for (int i = 0; i < 4; i++) {
+            Bound player_bound = CalcMinMaxVertexProj(&p, box.norm_axis[i]);
+            Bound box_bound = CalcMinMaxVertexProj(&box, box.norm_axis[i]);
 
-                if (box_bound.min > player_bound.max || box_bound.max < player_bound.min) {
-                    separate_axis_found = true;
-                }
+            // LogInfo("[box] player min and max = (%f, %f)", player_bound.min, player_bound.max)
+            // LogInfo("[box] box min and max = (%f, %f)", box_bound.min, box_bound.max)
+
+            if (box_bound.min > player_bound.max || player_bound.min > box_bound.max) {
+                box_separate_axis_found = true;
+                // LogInfo("BOX DEBUG!!!");
             }
         }
+        
 
-        if (separate_axis_found) {
+
+        if (player_separate_axis_found || box_separate_axis_found) {
             p.c = COLOR_WHITE;
             box.c = COLOR_WHITE;
         } else {
             p.c = COLOR_PURPLE;
             box.c = COLOR_ORANGE;
         }
+#endif   
 
         StartScene(COLOR_BLACK);
         BeginRendering();
 
         DrawRectangle(box.pos, box.size, box.rotate_deg, box.c);
 
+        for (int i = 0; i < 4; i++) {
+            DrawRectangle(box.vert_pos[i], debug_point_sz, 0.0f, COLOR_BLUE);
+        }
+
+        for (int i = 0; i < 4; i++) {
+            DrawRectangle(box.norm_axis[i], debug_point_sz, 0.0f, COLOR_CYAN);
+        }
+
         DrawRectangle(p.pos, p.size, p.rotate_deg, p.c);
+
+        for (int i = 0; i < 4; i++) {
+            DrawRectangle(p.vert_pos[i], debug_point_sz, 0.0f, COLOR_RED);
+        }
+
+        for (int i = 0; i < 4; i++) {
+            DrawRectangle(p.norm_axis[i], debug_point_sz, 0.0f, COLOR_PINK);
+        }
 
         EndRendering();
         EndScene();

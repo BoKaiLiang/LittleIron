@@ -18,7 +18,7 @@
 #define COLOR_YELLOW ((Color){ 255, 255, 0, 255 })
 #define COLOR_GREEN ((Color){ 0, 255, 0, 255 })
 #define COLOR_BLUE ((Color){ 0, 0, 255, 255 })
-#define COLOR_CYAN ((Color){ 0, 255, , 255 })
+#define COLOR_CYAN ((Color){ 0, 255, 255, 255 })
 #define COLOR_PURPLE ((Color){ 106, 13, 173, 255 })
 
 #define V2F_ZERO ((V2f){ 0.0f, 0.0f})

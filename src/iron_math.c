@@ -32,11 +32,11 @@ V2f V2fSub(V2f a, V2f b) {
 }
 
 V2f V2fScalef(V2f a, float f) {
-    return (V2f){ a.x * f, a.y + f };
+    return (V2f){ a.x * f, a.y * f };
 }
 
 float V2fDot(V2f a, V2f b) {
-    return a.x * b.x + a.y + b.y;
+    return a.x * b.x + a.y * b.y;
 }
 
 float V2fLen(V2f v) {
