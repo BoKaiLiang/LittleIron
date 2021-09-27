@@ -6,6 +6,8 @@
 #define WND_W 800
 #define WND_H 600
 
+#define G 400.0f
+
 typedef struct {
     V2f pos;
     V2f speed;
@@ -56,7 +58,7 @@ static void CalcEdgesNorm(Entity* e) {
     e->edges[2] = V2fSub(e->vert_pos[2], e->vert_pos[3]);
     e->edges[3] = V2fSub(e->vert_pos[3], e->vert_pos[0]);
 
-#if 1
+#if 0
     for (int i = 0; i < 4; i++) {
         LogInfo("Edge No %d: %s", (i + 1), V2fToString(e->edges[i]));
     }
@@ -69,7 +71,7 @@ static void CalcEdgesNorm(Entity* e) {
         e->norm_axis[i] = V2fNorm(normal);
     }
 
-#if 1
+#if 0
     for (int i = 0; i < 4; i++) {
         LogInfo("Normal No %d: %s", (i + 1), V2fToString(e->norm_axis[i]));
     }
@@ -128,12 +130,12 @@ int main() {
 
     Entity box;
     box.pos.x = 400.0f;
-    box.pos.y = 300.0f;
+    box.pos.y = 450.0f;
     box.speed.x = 0.0f;
     box.speed.y = 0.0f;
     box.c = COLOR_WHITE;
-    box.size.x = 200.0f;
-    box.size.y = 200.0f;
+    box.size.x = 450.0f;
+    box.size.y = 60.0f;
     box.rotate_deg = 0.0f;
     CalcVerticesPos(&box);
     CalcEdgesNorm(&box);
@@ -142,7 +144,7 @@ int main() {
     p.pos.x = 200.0f;
     p.pos.y = 200.0f;
     p.speed.x = 300.0f;
-    p.speed.y = 300.0f;
+    p.speed.y = 0.0f;
     p.c = COLOR_WHITE;
     p.size.x = 75.0f;
     p.size.y = 75.0f;
@@ -153,6 +155,9 @@ int main() {
     SetTargetFPS(120);
 
     V2f debug_point_sz = { 8.0f, 8.0f };
+
+    bool is_stand_on_floor = false;
+    bool can_jump = false;
 
     // Game loop
     while (IsWindowRunning()) {
@@ -169,14 +174,28 @@ int main() {
             move_player = true;
         }
 
-        if (IsKeyDown(KEY_DOWN)) {
-            p.pos.y += p.speed.y * dt;
+        if (IsKeyDown(KEY_SPACE) && can_jump) {
+            LogInfo("Pressed jump");
+            p.pos.y += (-1500.0f * dt);
             move_player = true;
-        } else if (IsKeyDown(KEY_UP)) {
-            p.pos.y -= p.speed.y * dt;
+            can_jump = false;
+        }
+
+        if (!is_stand_on_floor) {
+            LogInfo("In air");
+            p.pos.y += p.speed.y * dt;
+            p.speed.y += G * dt;
+            can_jump = false;
+            move_player = true;
+        } else {
+            LogInfo("On ground");
+            can_jump = true;
+            p.speed.y = 0.0f; 
             move_player = true;
         }
 
+
+#if 0
         // rotate
         if (IsKeyDown(KEY_E)) {
             p.rotate_deg += 3.0f;
@@ -193,6 +212,7 @@ int main() {
             }
             move_box = true;
         }
+#endif
 
 #if 0
         // AABB
@@ -241,12 +261,8 @@ int main() {
             Bound player_bound = CalcMinMaxVertexProj(&p, p.norm_axis[i]);
             Bound box_bound = CalcMinMaxVertexProj(&box, p.norm_axis[i]);
 
-            // LogInfo("[player] player min and max = (%f, %f)", player_bound.min, player_bound.max)
-            // LogInfo("[player] box min and max = (%f, %f)", box_bound.min, box_bound.max)
-
             if (box_bound.min > player_bound.max || player_bound.min > box_bound.max) {
                 player_separate_axis_found = true;
-                // LogInfo("PLAYER DEBUG!!!");
             }
         }
 
@@ -256,12 +272,8 @@ int main() {
             Bound player_bound = CalcMinMaxVertexProj(&p, box.norm_axis[i]);
             Bound box_bound = CalcMinMaxVertexProj(&box, box.norm_axis[i]);
 
-            // LogInfo("[box] player min and max = (%f, %f)", player_bound.min, player_bound.max)
-            // LogInfo("[box] box min and max = (%f, %f)", box_bound.min, box_bound.max)
-
             if (box_bound.min > player_bound.max || player_bound.min > box_bound.max) {
                 box_separate_axis_found = true;
-                // LogInfo("BOX DEBUG!!!");
             }
         }
         
@@ -270,10 +282,15 @@ int main() {
         if (player_separate_axis_found || box_separate_axis_found) {
             p.c = COLOR_WHITE;
             box.c = COLOR_WHITE;
+
+            is_stand_on_floor = false;
         } else {
             p.c = COLOR_PURPLE;
             box.c = COLOR_ORANGE;
+
+            is_stand_on_floor = true;
         }
+
 #endif   
 
         StartScene(COLOR_BLACK);
@@ -281,6 +298,7 @@ int main() {
 
         DrawRectangle(box.pos, box.size, box.rotate_deg, box.c);
 
+#if 0
         for (int i = 0; i < 4; i++) {
             DrawRectangle(box.vert_pos[i], debug_point_sz, 0.0f, COLOR_BLUE);
         }
@@ -288,9 +306,10 @@ int main() {
         for (int i = 0; i < 4; i++) {
             DrawRectangle(box.norm_axis[i], debug_point_sz, 0.0f, COLOR_CYAN);
         }
-
+#endif
         DrawRectangle(p.pos, p.size, p.rotate_deg, p.c);
 
+#if 0
         for (int i = 0; i < 4; i++) {
             DrawRectangle(p.vert_pos[i], debug_point_sz, 0.0f, COLOR_RED);
         }
@@ -298,6 +317,7 @@ int main() {
         for (int i = 0; i < 4; i++) {
             DrawRectangle(p.norm_axis[i], debug_point_sz, 0.0f, COLOR_PINK);
         }
+#endif
 
         EndRendering();
         EndScene();
