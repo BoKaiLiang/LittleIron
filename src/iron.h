@@ -7,7 +7,8 @@
 
 #include "iron_math.h"
 #include "iron_asset.h"
-#include "iron_window.h"
-#include "iron_render.h"
+#include "iron_render_window.h"
+// #include "iron_window.h"
+// #include "iron_render.h"
 
 #endif // _IRON_H_

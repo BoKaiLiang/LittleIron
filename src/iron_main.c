@@ -1,5 +1,31 @@
 #include "iron.h"
 
+#define WINDOW_W 800
+#define WINDOW_H 600
+
+int main() {
+/*
+    ResT init_res = CreateRenderWindow(WINDOW_W, WINDOW_H, "LittleIron", 60);
+    if (init_res != RES_SUCCESS) {
+        ReleaseRenderWindow();
+        return;
+    }
+    while (IsWindowRunning()) {
+
+        BeginRednering(COLOR_BLACK);
+
+        EndRendering();
+    }
+
+    ReleaseRenderWindow();
+*/
+    return 0;
+}
+
+// create collision module later...
+#if 0
+#include "iron.h"
+
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -330,3 +356,4 @@ int main() {
 
     return 0;
 }
+#endif

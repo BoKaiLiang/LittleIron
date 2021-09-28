@@ -15,7 +15,10 @@ set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
 add_executable( # 標記執行黨和原始碼
     LittleIron
-    ${sources}
+    src/iron_asset.c
+    src/iron_util.c
+    src/iron_math.c
+    src/iron_render_window.c
 )
 
 add_subdirectory(external/glfw) # 引用由glfw建置的lib
