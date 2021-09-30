@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
@@ -14,9 +15,14 @@
 #include "iron_asset.h"
 #include "iron_math.h"
 
-// default vertex sahder
+#define VERICES_PER_RECT 4
+#define TEXCOORDS_PER_RECT 4
+#define COLORS_PER_RECT 4
+#define INDICES_PER_RECT 6
+#define DEFAULT_MAX_RECT 4096
+#define MAX_DRAW_CALL_PER_FRAME 256
 
-// default fragment shader
+// default vertex sahder
 static const char* DEFAULT_2D_VERTEX_SHADER_CODE = "#version 330 core\n"
 "in vec2 _Pos;\n"
 "in vec2 _Texcoords;\n"
@@ -27,6 +33,7 @@ static const char* DEFAULT_2D_VERTEX_SHADER_CODE = "#version 330 core\n"
 "   Texcoords = _Texcoords;\n"
 "}\n\0";
 
+// default fragment shader
 static const char* DEFAULT_2D_FRAGMENT_SHADER_CODE = "#version 330 core\n"
 "in vec2 Texcoords;\n"
 "uniform vec4 _Color;\n"
@@ -50,6 +57,31 @@ static const unsigned int INDICES[] = {
 	0, 1, 3,   
 	1, 2, 3
 };
+
+typedef struct VertexBuffer {
+    V2f* vertices;
+    size_t vertices_count;
+    size_t vertices_max;
+
+    V2f* texcoords;
+    size_t texcoords_count;
+    size_t texcoords_max;
+
+    V4f* colors;
+    size_t colors_count;
+    size_t colors_max;
+
+    unsigned int* indices;
+    size_t indices_count;
+    size_t indices_max;
+
+    unsigned int vbo[4]; // positions, texture coordinates, colors, indicess
+    unsigned int vao;
+} VertexBuffer;
+
+typedef struct DrawCall {
+    size_t vertices_count;
+} DrawCall;
 
 // all window and renderer state data
 static struct {
@@ -80,7 +112,10 @@ static struct {
     } Time;
 
     struct {
-        unsigned vbo, vao, ibo;
+        VertexBuffer vertex_buffer;
+
+        DrawCall draw_calls[MAX_DRAW_CALL_PER_FRAME];
+        unsigned int draw_calls_count;
 
         Shader default_shader;
         Texture default_texture;
@@ -106,6 +141,12 @@ static void CursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 static void MouseScrollCallback(GLFWwindow* window, double xpox, double ypos);
 // [iron_render_widnow] callcak function when resize window size
 static void FramebufferSizeCallback(GLFWwindow* window, int w, int h);
+
+// [iron_render_widnow]  clear and render current batch if vertex buffer is full or is end of this frame
+static void RenderCurrentBatch();
+// [iron_render_widnow] push/add vertex data into vertex buffer
+static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bottom_left, Color c);
+
 
 // ---------------------------------- //
 //          Window Management         //
@@ -175,6 +216,7 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
         return load_shader_res;
     }
 
+#if 0
     // init vertex buffer object, vertex array object and index buffer object
 	glGenVertexArrays(1, &CONTEXT.RenderState.vao);
 	glBindVertexArray(CONTEXT.RenderState.vao);
@@ -196,6 +238,61 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     glEnableVertexAttribArray(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD]);
 
 	glBindVertexArray(0);
+#endif
+
+    // big vertex buffer for batch renderer
+    CONTEXT.RenderState.vertex_buffer.vertices_count = 0;
+    CONTEXT.RenderState.vertex_buffer.vertices_max = DEFAULT_MAX_RECT * VERICES_PER_RECT;
+    CONTEXT.RenderState.vertex_buffer.vertices = (V2f*)calloc(DEFAULT_MAX_RECT * VERICES_PER_RECT, DEFAULT_MAX_RECT * VERICES_PER_RECT * sizeof(V2f));
+
+    CONTEXT.RenderState.vertex_buffer.texcoords_count = 0;
+    CONTEXT.RenderState.vertex_buffer.texcoords_max = DEFAULT_MAX_RECT * TEXCOORDS_PER_RECT;
+    CONTEXT.RenderState.vertex_buffer.texcoords = (V2f*)calloc(DEFAULT_MAX_RECT * TEXCOORDS_PER_RECT, DEFAULT_MAX_RECT * TEXCOORDS_PER_RECT * sizeof(V2f));
+
+    CONTEXT.RenderState.vertex_buffer.colors_count = 0;
+    CONTEXT.RenderState.vertex_buffer.colors_max = DEFAULT_MAX_RECT * COLORS_PER_RECT;
+    CONTEXT.RenderState.vertex_buffer.colors = (V4f*)calloc(DEFAULT_MAX_RECT * COLORS_PER_RECT, DEFAULT_MAX_RECT * COLORS_PER_RECT * sizeof(V4f));
+
+    CONTEXT.RenderState.vertex_buffer.indices_count = 0;
+    CONTEXT.RenderState.vertex_buffer.indices_max = DEFAULT_MAX_RECT * INDICES_PER_RECT;
+    CONTEXT.RenderState.vertex_buffer.indices = (unsigned int*)calloc(DEFAULT_MAX_RECT * INDICES_PER_RECT, DEFAULT_MAX_RECT * INDICES_PER_RECT * sizeof(unsigned int));
+    
+    unsigned int offset = 0;
+    for (size_t i = 0; i < (DEFAULT_MAX_RECT * INDICES_PER_RECT); i += INDICES_PER_RECT) {
+        CONTEXT.RenderState.vertex_buffer.indices[i] = offset + 0;
+        CONTEXT.RenderState.vertex_buffer.indices[i + 1] = offset + 1;
+        CONTEXT.RenderState.vertex_buffer.indices[i + 2] = offset + 3;
+        CONTEXT.RenderState.vertex_buffer.indices[i + 3] = offset + 1;
+        CONTEXT.RenderState.vertex_buffer.indices[i + 4] = offset + 2;
+        CONTEXT.RenderState.vertex_buffer.indices[i + 5] = offset + 3;
+
+        offset += 4;
+    }
+
+    glGenVertexArrays(1, &CONTEXT.RenderState.vertex_buffer.vao);
+    glBindVertexArray(CONTEXT.RenderState.vertex_buffer.vao);
+
+    glGenBuffers(4, CONTEXT.RenderState.vertex_buffer.vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(V2f) * VERICES_PER_RECT, NULL, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(V2f) * TEXCOORDS_PER_RECT, NULL, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[2]);
+    glBufferData(GL_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(V4f) * COLORS_PER_RECT, NULL, GL_DYNAMIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[3]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(unsigned int) * INDICES_PER_RECT, CONTEXT.RenderState.vertex_buffer.indices, GL_DYNAMIC_DRAW);
+
+    glBindVertexArray(0);
+
+    // init draw call
+    for (int i = 0; i < MAX_DRAW_CALL_PER_FRAME; i++) {
+        CONTEXT.RenderState.draw_calls[i].vertices_count = 0;
+    }
+    CONTEXT.RenderState.draw_calls_count = 0;
 
 	// create default texture, a pixel 1x1 white squad
 	unsigned char white_pixel[4] = { 255, 255, 255, 255 };
@@ -226,9 +323,25 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
 
 // [iron_render_window] release window handle and 2d renderer
 void ReleaseRenderWindow(void) {
-    glDeleteBuffers(1, &CONTEXT.RenderState.vbo);
-    glDeleteBuffers(1, &CONTEXT.RenderState.ibo);
-    glDeleteVertexArrays(1, &CONTEXT.RenderState.vao);
+
+    if (CONTEXT.RenderState.vertex_buffer.vertices != NULL) {
+        free(CONTEXT.RenderState.vertex_buffer.vertices);
+    }
+
+    if (CONTEXT.RenderState.vertex_buffer.texcoords != NULL) {
+        free(CONTEXT.RenderState.vertex_buffer.texcoords);
+    }
+
+    if (CONTEXT.RenderState.vertex_buffer.colors != NULL) {
+        free(CONTEXT.RenderState.vertex_buffer.colors);
+    }
+
+    if (CONTEXT.RenderState.vertex_buffer.indices != NULL) {
+        free(CONTEXT.RenderState.vertex_buffer.indices);
+    }
+
+    glDeleteBuffers(4, CONTEXT.RenderState.vertex_buffer.vbo);
+    glDeleteVertexArrays(1, &CONTEXT.RenderState.vertex_buffer.vao);
     glDeleteTextures(1, &CONTEXT.RenderState.default_texture.id);
     glDeleteProgram(CONTEXT.RenderState.default_shader.id);
 
@@ -262,11 +375,14 @@ void BeginRednering(Color clear_color) {
 
     // update projection matrix
 	CONTEXT.RenderState.projection = Mat4Ortho(0.0f, (float)CONTEXT.Window.w, (float)CONTEXT.Window.h, 0.0f, -1.0f, 1.0f);
+
+    glfwSwapBuffers(CONTEXT.Window.handle);
 }
 
 // [iron_render_window] state of end rendering and store drawing time step, frame time step
 void EndRendering() {
-    glfwSwapBuffers(CONTEXT.Window.handle);
+
+    RenderCurrentBatch();
 
     // reset input state
     // must put before call `glfwPollEvents`
@@ -385,6 +501,24 @@ float GetDeltaTime() {
 
 // [iron_render_window] draw rectangle
 void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
+
+    // TODO!!
+
+    float cos = cosf(DegToRad(angle));
+    float sin = sinf(DegToRad(angle));
+
+    V2f top_right = V2F_ZERO;
+    top_right.x = sz.x / 2.0f;
+    top_right.y = sz.y / 2.0f;
+
+
+    V2f top_left = V2F_ZERO;
+    V2f bottom_right = V2F_ZERO;
+    V2f bottom_left = V2F_ZERO;
+
+    PushVertexData(top_right, top_left, bottom_right, bottom_left, c);
+
+#if 0
     glBindVertexArray(CONTEXT.RenderState.vao);
 
 	glUseProgram(CONTEXT.RenderState.default_shader.id);
@@ -412,11 +546,12 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glBindVertexArray(0);
+#endif
 }
 
 // [iron_render_window] draw line
 void DrawLine(V2f p0, V2f p1, int thinkness, Color c) {
-    // TODO:
+    // TODO!!
 }
 
 // ---------------------------------- //
@@ -457,4 +592,146 @@ static void FramebufferSizeCallback(GLFWwindow* window, int w, int h) {
     CONTEXT.Window.w = w;
     CONTEXT.Window.h = h;
     glViewport(0, 0, w, h);
+}
+
+// [iron_render_widnow]  clear and render current batch if vertex buffer is full or is end of this frame
+static void RenderCurrentBatch() {
+    // active vertex array
+    glBindVertexArray(CONTEXT.RenderState.vertex_buffer.vao);
+
+    // set vertex buffer data
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[0]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, CONTEXT.RenderState.vertex_buffer.vertices_count * sizeof(V2f), CONTEXT.RenderState.vertex_buffer.vertices);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[1]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, CONTEXT.RenderState.vertex_buffer.texcoords_count * sizeof(V2f), CONTEXT.RenderState.vertex_buffer.texcoords);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[2]);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, CONTEXT.RenderState.vertex_buffer.colors_count * sizeof(V2f), CONTEXT.RenderState.vertex_buffer.colors);
+
+    glUseProgram(CONTEXT.RenderState.default_shader.id);
+
+    glUniformMatrix4fv(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_MAT4_MVP], 1, false, CONTEXT.RenderState.projection.unit);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[0]);
+    glVertexAttribPointer(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_POS], 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[1]);
+    glVertexAttribPointer(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD], 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[2]);
+    glVertexAttribPointer(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC4_COLOR], 4, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[3]);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE0, CONTEXT.RenderState.default_texture.id);
+
+    // draw!!
+    size_t vertex_offset = 0;
+    for (size_t i = 0; i < CONTEXT.RenderState.draw_calls_count; i++) {
+        glDrawElements(GL_TRIANGLES, (CONTEXT.RenderState.draw_calls[i].vertices_count / VERICES_PER_RECT * INDICES_PER_RECT), GL_UNSIGNED_INT, (const GLvoid*)(sizeof(unsigned int) * vertex_offset / VERICES_PER_RECT * INDICES_PER_RECT));
+        vertex_offset += CONTEXT.RenderState.draw_calls[i].vertices_count;
+    }
+
+    glBindVertexArray(0);
+
+    // reset vertex buffer and draw calls
+    CONTEXT.RenderState.vertex_buffer.vertices_count = 0;
+    CONTEXT.RenderState.vertex_buffer.texcoords_count = 0;
+    CONTEXT.RenderState.vertex_buffer.colors_count = 0;
+    CONTEXT.RenderState.vertex_buffer.indices_count = 0;
+
+    for (int i = 0; i < MAX_DRAW_CALL_PER_FRAME; i++) {
+        CONTEXT.RenderState.draw_calls[i].vertices_count = 0;
+    }
+    CONTEXT.RenderState.draw_calls_count = 0;
+}
+
+// [iron_render_widnow] push/add vertex data into vertex buffer
+static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bottom_left, Color c) {
+    // clock-wise
+
+    // top right
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = top_right.x;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = top_right.y;
+	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = (float)(c.r / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = (float)(c.g / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = (float)(c.b / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = (float)(c.a / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
+
+	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
+
+    // bottom right
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = bottom_right.x;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = bottom_right.y;
+	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = (float)(c.r / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = (float)(c.g / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = (float)(c.b / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = (float)(c.a / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
+
+	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
+
+    // bottom left
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = bottom_left.x;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = bottom_left.y;
+	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = (float)(c.r / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = (float)(c.g / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = (float)(c.b / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = (float)(c.a / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
+
+	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
+
+    // top left
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = top_left.x;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = top_left.y;
+	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
+
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = (float)(c.r / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = (float)(c.g / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = (float)(c.b / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = (float)(c.a / 255.0f);
+	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
+
+	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
+
+    // indices
+    CONTEXT.RenderState.vertex_buffer.indices_count += 6;
+
+    if (CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count >= (DEFAULT_MAX_RECT * VERICES_PER_RECT)) {
+
+        // draw call array is full
+        if (CONTEXT.RenderState.draw_calls_count >= MAX_DRAW_CALL_PER_FRAME) {
+            RenderCurrentBatch();
+            CONTEXT.RenderState.draw_calls_count = 0;
+        }
+
+        CONTEXT.RenderState.draw_calls_count += 1;
+        CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count].vertices_count = 0;
+    }
 }

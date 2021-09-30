@@ -19,6 +19,7 @@ add_executable( # 標記執行黨和原始碼
     src/iron_util.c
     src/iron_math.c
     src/iron_render_window.c
+    src/iron_main.c
 )
 
 add_subdirectory(external/glfw) # 引用由glfw建置的lib

@@ -4,11 +4,11 @@
 #define WINDOW_H 600
 
 int main() {
-/*
+
     ResT init_res = CreateRenderWindow(WINDOW_W, WINDOW_H, "LittleIron", 60);
     if (init_res != RES_SUCCESS) {
         ReleaseRenderWindow();
-        return;
+        return init_res;
     }
     while (IsWindowRunning()) {
 
@@ -18,7 +18,7 @@ int main() {
     }
 
     ReleaseRenderWindow();
-*/
+
     return 0;
 }
 
