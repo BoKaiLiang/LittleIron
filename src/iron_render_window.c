@@ -292,7 +292,7 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     for (int i = 0; i < MAX_DRAW_CALL_PER_FRAME; i++) {
         CONTEXT.RenderState.draw_calls[i].vertices_count = 0;
     }
-    CONTEXT.RenderState.draw_calls_count = 0;
+    CONTEXT.RenderState.draw_calls_count = 1;
 
 	// create default texture, a pixel 1x1 white squad
 	unsigned char white_pixel[4] = { 255, 255, 255, 255 };
@@ -504,17 +504,39 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
 
     // TODO!!
 
-    float cos = cosf(DegToRad(angle));
-    float sin = sinf(DegToRad(angle));
+    Mat4 rotate_matrix = Mat4EulerRotate(MAT4_IDENTITY, angle);
 
     V2f top_right = V2F_ZERO;
     top_right.x = sz.x / 2.0f;
     top_right.y = sz.y / 2.0f;
-
+    V4f v0 = { top_right.x, top_right.y, 0.0f, 1.0f };
+    v0 = Mat4MulV4f(rotate_matrix, v0);
+    top_right.x = v0.x + pos.x;
+    top_right.y = v0.y + pos.y;
 
     V2f top_left = V2F_ZERO;
+    top_left.x = -sz.x / 2.0f;
+    top_left.y = sz.y / 2.0f;
+    V4f v1 = { top_left.x, top_left.y, 0.0f, 1.0f };
+    v1 = Mat4MulV4f(rotate_matrix, v1);
+    top_left.x = v1.x + pos.x;
+    top_left.y = v1.y + pos.y;
+
     V2f bottom_right = V2F_ZERO;
+    bottom_right.x = sz.x / 2.0f;
+    bottom_right.y = -sz.y / 2.0f;
+    V4f v2 = { bottom_right.x, bottom_right.y, 0.0f, 1.0f };
+    v2 = Mat4MulV4f(rotate_matrix, v2);
+    bottom_right.x = v2.x + pos.x;
+    bottom_right.y = v2.y + pos.y;
+
     V2f bottom_left = V2F_ZERO;
+    bottom_left.x = -sz.x / 2.0f;
+    bottom_left.y = -sz.y / 2.0f;
+    V4f v3 = { top_right.x, top_right.y, 0.0f, 1.0f };
+    v3 = Mat4MulV4f(rotate_matrix, v3);
+    bottom_left.x = v3.x + pos.x;
+    bottom_left.y = v3.y + pos.y;
 
     PushVertexData(top_right, top_left, bottom_right, bottom_left, c);
 

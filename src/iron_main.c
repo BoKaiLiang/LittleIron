@@ -10,9 +10,15 @@ int main() {
         ReleaseRenderWindow();
         return init_res;
     }
+
+    V2f pos = { 400.0f, 300.0f };
+    V2f sz = { 100.0f, 100.0f };
+
     while (IsWindowRunning()) {
 
         BeginRednering(COLOR_BLACK);
+
+            DrawRectangle(pos, sz, 0.0f, COLOR_BLUE);
 
         EndRendering();
     }
