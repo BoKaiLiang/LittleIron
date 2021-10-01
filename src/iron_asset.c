@@ -56,7 +56,7 @@ ResT LoadShaderCode(Shader* shader, const char* vertex_code, const char* fragmen
 	int texcoord_location = glGetAttribLocation(shader->id, "_Texcoords");
 	shader->attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD] = texcoord_location;
 
-	int color_location = glGetUniformLocation(shader->id, "_Color");
+	int color_location = glGetAttribLocation(shader->id, "_Color");
 	shader->attribs_locations[SHADER_ATTRIB_VEC4_COLOR] = color_location;
 
 	int texture_location = glGetUniformLocation(shader->id, "_Texture2D");

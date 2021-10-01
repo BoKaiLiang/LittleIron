@@ -15,10 +15,15 @@ int main() {
     V2f sz = { 100.0f, 100.0f };
 
     while (IsWindowRunning()) {
+        
+        // EXIT the game
+        if (IsKeyPressed(KEY_ESCAPE)) {
+            CloseRenderWindow();
+        }
 
-        BeginRednering(COLOR_BLACK);
+        BeginRednering(COLOR_WHITE);
 
-            DrawRectangle(pos, sz, 0.0f, COLOR_BLUE);
+            DrawRectangle(pos, sz, 0.0f, COLOR_RED);
 
         EndRendering();
     }
