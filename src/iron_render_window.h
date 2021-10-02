@@ -75,4 +75,6 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c);
 // [iron_render_window] draw line
 void DrawLine(V2f p0, V2f p1, int thinkness, Color c);
 
+void DrawRectangleGrid(V2f pos, V2f sz, float angle, Color c);
+
 #endif // _IRON_RENDER_WINDOW_H_

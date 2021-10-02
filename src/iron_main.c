@@ -13,6 +13,10 @@ int main() {
 
     V2f pos = { 400.0f, 300.0f };
     V2f sz = { 100.0f, 100.0f };
+    V2f sz2 = { 5.0f, 5.0f };
+
+    V2f p0 = { 350.0f, 250.0f };
+    V2f p1 = { 450.0f, 350.0f };
 
     while (IsWindowRunning()) {
         
@@ -21,9 +25,15 @@ int main() {
             CloseRenderWindow();
         }
 
-        BeginRednering(COLOR_WHITE);
+        BeginRednering(COLOR_PINK);
 
             DrawRectangle(pos, sz, 0.0f, COLOR_RED);
+
+            DrawLine(p0, p1, 5, COLOR_PURPLE);
+
+            // DrawRectangleGrid(pos, sz, 0.0f, COLOR_GREEN);
+
+            // DrawRectangleGrid(pos, sz, 0.0f, COLOR_GREEN);
 
         EndRendering();
     }
