@@ -45,7 +45,7 @@ static const char* DEFAULT_2D_FRAGMENT_SHADER_CODE = "#version 330 core\n"
 "uniform sampler2D _Texture2D;"
 "out vec4 _FragColor;\n"
 "void main() {\n"
-"   _FragColor = vec4(1.0, 0.0, 0.0, 1.0) * texture(_Texture2D, Texcoords);\n" // TODO: can't draw the default texture over here
+"   _FragColor = Color * texture(_Texture2D, Texcoords);\n" // TODO: can't draw the default texture over here
 "}\n\0";
 
 
@@ -256,19 +256,19 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     // big vertex buffer for batch renderer
     CONTEXT.RenderState.vertex_buffer.vertices_count = 0;
     CONTEXT.RenderState.vertex_buffer.vertices_max = DEFAULT_MAX_RECT * VERICES_PER_RECT;
-    CONTEXT.RenderState.vertex_buffer.vertices = (V2f*)calloc(DEFAULT_MAX_RECT * VERICES_PER_RECT, sizeof(V2f));
+    CONTEXT.RenderState.vertex_buffer.vertices = (V2f*)malloc(DEFAULT_MAX_RECT * VERICES_PER_RECT * sizeof(V2f));
 
     CONTEXT.RenderState.vertex_buffer.texcoords_count = 0;
     CONTEXT.RenderState.vertex_buffer.texcoords_max = DEFAULT_MAX_RECT * TEXCOORDS_PER_RECT;
-    CONTEXT.RenderState.vertex_buffer.texcoords = (V2f*)calloc(DEFAULT_MAX_RECT * TEXCOORDS_PER_RECT,sizeof(V2f));
+    CONTEXT.RenderState.vertex_buffer.texcoords = (V2f*)malloc(DEFAULT_MAX_RECT * TEXCOORDS_PER_RECT * sizeof(V2f));
 
     CONTEXT.RenderState.vertex_buffer.colors_count = 0;
     CONTEXT.RenderState.vertex_buffer.colors_max = DEFAULT_MAX_RECT * COLORS_PER_RECT;
-    CONTEXT.RenderState.vertex_buffer.colors = (V4f*)calloc(DEFAULT_MAX_RECT * COLORS_PER_RECT, sizeof(V4f));
+    CONTEXT.RenderState.vertex_buffer.colors = (V4f*)malloc(DEFAULT_MAX_RECT * COLORS_PER_RECT * sizeof(V4f));
 
     CONTEXT.RenderState.vertex_buffer.indices_count = 0;
     CONTEXT.RenderState.vertex_buffer.indices_max = DEFAULT_MAX_RECT * INDICES_PER_RECT;
-    CONTEXT.RenderState.vertex_buffer.indices = (unsigned int*)calloc(DEFAULT_MAX_RECT * INDICES_PER_RECT, sizeof(unsigned int));
+    CONTEXT.RenderState.vertex_buffer.indices = (unsigned int*)malloc(DEFAULT_MAX_RECT * INDICES_PER_RECT * sizeof(unsigned int));
     
     unsigned int offset = 0;
     for (size_t i = 0; i < (DEFAULT_MAX_RECT * INDICES_PER_RECT); i += INDICES_PER_RECT) {
@@ -283,23 +283,32 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     }
 
     glGenVertexArrays(1, &CONTEXT.RenderState.vertex_buffer.vao);
-    glBindVertexArray(CONTEXT.RenderState.vertex_buffer.vao);
+    // glBindVertexArray(CONTEXT.RenderState.vertex_buffer.vao);
 
     glGenBuffers(4, CONTEXT.RenderState.vertex_buffer.vbo);
 
     glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[0]);
     glBufferData(GL_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(V2f) * VERICES_PER_RECT, NULL, GL_DYNAMIC_DRAW);
+    // glVertexAttribPointer(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_POS], 2, GL_FLOAT, GL_FALSE, 0, 0);
+    // glEnableVertexAttribArray(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_POS]);
 
     glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[1]);
     glBufferData(GL_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(V2f) * TEXCOORDS_PER_RECT, NULL, GL_DYNAMIC_DRAW);
+    // glVertexAttribPointer(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD], 2, GL_FLOAT, GL_FALSE, 0, 0);
+    // glEnableVertexAttribArray(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC2_TEXCOORD]);
 
     glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[2]);
     glBufferData(GL_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(V4f) * COLORS_PER_RECT, NULL, GL_DYNAMIC_DRAW);
+    // glVertexAttribPointer(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC4_COLOR], 4, GL_FLOAT, GL_FALSE, 0, 0);
+    // glEnableVertexAttribArray(CONTEXT.RenderState.default_shader.attribs_locations[SHADER_ATTRIB_VEC4_COLOR]);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[3]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, DEFAULT_MAX_RECT * sizeof(unsigned int) * INDICES_PER_RECT, CONTEXT.RenderState.vertex_buffer.indices, GL_STATIC_DRAW);
 
-    // glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    glBindVertexArray(0);
 
     // init draw call
     for (int i = 0; i < MAX_DRAW_CALL_PER_FRAME; i++) {
@@ -308,6 +317,7 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     CONTEXT.RenderState.draw_calls_count = 1;
 
 	// create default texture, a pixel 1x1 white squad
+    
 	unsigned char white_pixel[4] = { 255, 255, 255, 255 };
 	CONTEXT.RenderState.default_texture.w = 1;
 	CONTEXT.RenderState.default_texture.h = 1;
@@ -326,6 +336,13 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white_pixel);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+    
+
+    // ResT load_tex = LoadTextureFile(&CONTEXT.RenderState.default_texture, "assets/kenney_animalpackredux/rabbit.png");
+    // if (load_tex != RES_SUCCESS) {
+    //   LogError("failed to load default texture");
+    //   return load_tex;
+    // }
 
     // math... random
     srand((time_t)NULL);
@@ -652,7 +669,7 @@ static void RenderCurrentBatch() {
     glBufferSubData(GL_ARRAY_BUFFER, 0, CONTEXT.RenderState.vertex_buffer.texcoords_count * sizeof(V2f), CONTEXT.RenderState.vertex_buffer.texcoords);
 
     glBindBuffer(GL_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[2]);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, CONTEXT.RenderState.vertex_buffer.colors_count * sizeof(V2f), CONTEXT.RenderState.vertex_buffer.colors);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, CONTEXT.RenderState.vertex_buffer.colors_count * sizeof(V4f), CONTEXT.RenderState.vertex_buffer.colors);
 
     glUseProgram(CONTEXT.RenderState.default_shader.id);
 
@@ -673,7 +690,7 @@ static void RenderCurrentBatch() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[3]);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE0, CONTEXT.RenderState.default_texture.id);
+    glBindTexture(GL_TEXTURE_2D, CONTEXT.RenderState.default_texture.id);
 
     // draw!!
     size_t vertex_offset = 0;
@@ -704,69 +721,69 @@ static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bo
     V4f color_v4 = ColorToVec4f(c);
 
     // top right
-    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = top_right.x;
-	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = top_right.y;
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = 450.0f;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = 350.0f;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = color_v4.g;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = color_v4.b;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = color_v4.a;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
 
 	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
 
     // bottom right
-    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = bottom_right.x;
-	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = bottom_right.y;
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = 450.0f;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = 250.0f;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 0.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = color_v4.g;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = color_v4.b;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = color_v4.a;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
 
 	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
 
     // bottom left
-    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = bottom_left.x;
-	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = bottom_left.y;
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = 350.0f;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = 250.0f;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 0.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 0.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = color_v4.g;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = color_v4.b;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = color_v4.a;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
 
 	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
 
     // top left
-    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = top_left.x;
-	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = top_left.y;
+    CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].x = 350.0f;
+	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = 350.0f;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 0.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = color_v4.g;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = color_v4.b;
-	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = color_v4.a;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].g = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].b = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].a = 1.0f;
 	CONTEXT.RenderState.vertex_buffer.colors_count += 1;
 
 	CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count += 1;
