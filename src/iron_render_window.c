@@ -124,6 +124,7 @@ static struct {
 
         Shader default_shader;
         Texture default_texture;
+        Font default_font;
 
         Mat4 projection;
     } RenderState;
@@ -344,6 +345,25 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     //   return load_tex;
     // }
 
+    // load default font
+    ResT load_font_res = LoadFontTTF(&CONTEXT.RenderState.default_font, 64, "assets/fonts/arial.ttf");
+    if (load_font_res != RES_SUCCESS) {
+        return load_font_res;
+    }
+
+    // TEST: print character data in font
+    LogInfo("Create default texture, id: %d", CONTEXT.RenderState.default_font.texture.id);
+    for (int i = 0; i < ASCII_CHAR_COUNT; i++) {
+        char c = CONTEXT.RenderState.default_font.chars[i].unicode;
+        Rect rec = CONTEXT.RenderState.default_font.chars[i].rec;
+        int xoffset = CONTEXT.RenderState.default_font.chars[i].xoffset;
+        int yoffset = CONTEXT.RenderState.default_font.chars[i].yoffset;
+        int xadvance = CONTEXT.RenderState.default_font.chars[i].xadvance;
+
+        LogInfo("Character: %c, rect = %s, xoffset = %d, yoffset = %d, xadvance = %d", c, RectToString(rec), xoffset, yoffset, xadvance);
+    }
+
+
     // math... random
     srand((time_t)NULL);
 
@@ -371,8 +391,9 @@ void ReleaseRenderWindow(void) {
 
     glDeleteBuffers(4, CONTEXT.RenderState.vertex_buffer.vbo);
     glDeleteVertexArrays(1, &CONTEXT.RenderState.vertex_buffer.vao);
-    glDeleteTextures(1, &CONTEXT.RenderState.default_texture.id);
-    glDeleteProgram(CONTEXT.RenderState.default_shader.id);
+    ReleaseShader(&CONTEXT.RenderState.default_shader);
+    ReleaseTexture(&CONTEXT.RenderState.default_texture);
+    ReleaseFont(&CONTEXT.RenderState.default_font);
 
     if (CONTEXT.Window.handle != NULL) {
         glfwDestroyWindow(CONTEXT.Window.handle);
@@ -755,7 +776,7 @@ static void RenderCurrentBatch() {
     for (size_t i = 0; i < CONTEXT.RenderState.draw_calls_count; i++) {
         glDrawElements(GL_TRIANGLES, (CONTEXT.RenderState.draw_calls[i].vertices_count / VERICES_PER_RECT * INDICES_PER_RECT), GL_UNSIGNED_INT, (const GLvoid*)(sizeof(unsigned int) * vertex_offset / VERICES_PER_RECT * INDICES_PER_RECT));
         vertex_offset += CONTEXT.RenderState.draw_calls[i].vertices_count;
-        LogInfo("Current draw %d, vertices count %d", (i + 1), CONTEXT.RenderState.draw_calls[i].vertices_count);
+        // LogInfo("Current draw %d, vertices count %d", (i + 1), CONTEXT.RenderState.draw_calls[i].vertices_count);
     }
 
     glBindVertexArray(0);

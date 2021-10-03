@@ -6,7 +6,7 @@
 #include "glad/gl.h"
 #include "GLFW/glfw3.h"
 
-#define PI 3.14159265359
+#define ASCII_CHAR_COUNT 95
 
 #define COLOR_NONE ((Color){ 0, 0, 0, 0 })
 #define COLOR_WHITE ((Color){ 255, 255, 255, 255 })
@@ -63,6 +63,10 @@ typedef enum ResultType {
     RES_ERROR_GET_SHADER_UNIFORM        = 6,
     
     RES_ERROR_LOAD_IMAGE_FILE           = 7,
+
+    RES_ERROR_LOAD_TTF_FILE             = 8,
+    RES_ERROR_CREATE_STB_TTF_OBJ        = 9,
+    RES_ERROR_CREATE_FONT_TEXTURE       = 10,
 } ResT;
 
 typedef struct Vec2f {
@@ -88,6 +92,11 @@ typedef struct Mat4x4 {
     };
 } Mat4;
 
+typedef struct Rect {
+    float x, y;
+    float w, h;
+} Rect;
+
 typedef enum ShaderAttribType {
     SHADER_ATTRIB_VEC2_POS,
     SHADER_ATTRIB_VEC2_TEXCOORD,
@@ -103,6 +112,13 @@ typedef struct Shader {
     int attribs_locations[MAX_SHADER_ATTTRIBS];
 } Shader;
 
+typedef enum ImageFmt {
+    IMG_FMT_WHITE_BLACK = GL_R8,
+    IMG_FMT_GRAYSACLE   = GL_RG8,
+    IMG_FMT_RGB         = GL_RGB8,
+    IMG_FMT_RGBA        = GL_RGBA8,
+} ImageFmt;
+
 typedef enum GL_TextureFmt{
     TEX_FMT_WHITE_BLACK = GL_RED,
     TEX_FMT_GRAYSCALE   = GL_RG,
@@ -110,11 +126,31 @@ typedef enum GL_TextureFmt{
     TEX_FMT_RGBA        = GL_RGBA,
 } TextureFmt;
 
+typedef struct Image {
+    unsigned char* data;
+    int w, h;
+    ImageFmt src_fmt;
+} Image;
+
 typedef struct Texture {
     unsigned int id;
     int w, h;
     TextureFmt gl_fmt;
 } Texture;
+
+typedef struct CharInfo {
+    int unicode;
+    unsigned char* data;
+    Rect rec;
+    int xoffset, yoffset;
+    int xadvance;
+} CharInfo;
+
+typedef struct Font {
+    Texture texture;
+    int base_height;
+    CharInfo chars[ASCII_CHAR_COUNT];
+} Font;
 
 typedef enum KeyCode {
     /* Printable keys */

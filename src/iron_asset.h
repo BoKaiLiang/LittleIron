@@ -13,7 +13,16 @@ void ReleaseShader(Shader* shader);
 // [iron_asset] load image file and store to opengl texture
 ResT LoadTextureFile(Texture* texture, const char* file_name);
 
+// [iron_asset] load texture from image
+ResT LoadTextureImg(Texture* texture, Image* img);
+
 // [iron_asset] release texture
 void ReleaseTexture(Texture* texture);
+
+// [iron_asset] load .ttf(true type) font
+ResT LoadFontTTF(Font* font, int default_sz, const char* file_name);
+
+// [iron_asset] release font
+void ReleaseFont(Font* font);
 
 #endif // _IRON_ASSET_H_

@@ -25,4 +25,7 @@ const char* ColorToString(Color c);
 // [iron_util] Mat4 to string
 const char* Mat4ToString(Mat4 m);
 
+// [iron_util] Rect to string
+const char* RectToString(Rect r);
+
 #endif // _IRON_UTIL_H_

@@ -103,3 +103,18 @@ const char* Mat4ToString(Mat4 m) {
 
     return buffer;
 }
+
+// [iron_util] Rect to string
+const char* RectToString(Rect r) {
+    char* buffer = STR_BUFFERS[BUFFER_INDEX];
+    memset(buffer, 0, MAX_BUFFFERS_CHAR_LEN);
+
+    sprintf_s(buffer, MAX_BUFFFERS_CHAR_LEN, "( x = %.4f, y = %.4f, width = %.4f, height = %.4f )", r.x, r.y, r.w, r.h);
+
+    BUFFER_INDEX += 1;
+    if (BUFFER_INDEX >= MAX_BUFFERS_COUNT) {
+        BUFFER_INDEX = 0;
+    }
+
+    return buffer;
+}

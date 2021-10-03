@@ -12,11 +12,11 @@ int GetRandInt(int min, int max) {
 }
 
 float DegToRad(float degree) {
-    return degree * PI / 180.0f;
+    return degree * M_PI / 180.0f;
 }
 
 float RadToRad(float rad) {
-    return rad * 180.0f / PI;
+    return rad * 180.0f / M_PI;
 }
 
 // ---------------------------------- //
