@@ -16,6 +16,22 @@ static const char* LOG_LABELS[MAX_LOG_TYPE] = {
 static char STR_BUFFERS[MAX_BUFFERS_COUNT][MAX_BUFFFERS_CHAR_LEN] = { 0 };
 static int BUFFER_INDEX = 0;
 
+// [iron_util] get string
+const char* StringFormat(const char* fmt, ...) {
+    char* curr_buffer = STR_BUFFERS[BUFFER_INDEX];
+    memset(curr_buffer, 0, MAX_BUFFFERS_CHAR_LEN);
+    BUFFER_INDEX += 1;
+    if (BUFFER_INDEX >= MAX_BUFFERS_COUNT)
+        BUFFER_INDEX = 0;
+
+    va_list args;
+    va_start(args, fmt);
+    vsprintf_s(curr_buffer, MAX_BUFFFERS_CHAR_LEN, fmt, args);
+    va_end(args);
+
+    return curr_buffer;
+}
+
 // [iron_util] base format function to print the log
 void LogMessage(LogT log_type, const char* file_name, int line, const char* fmt, ...) {
     va_list args;

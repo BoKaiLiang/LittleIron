@@ -7,6 +7,9 @@
 #define LogWarning(...) LogMessage(LOG_WARN, __FILE__, __LINE__, __VA_ARGS__);
 #define LogError(...) LogMessage(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__);
 
+// [iron_util] get string
+const char* StringFormat(const char* fmt, ...);
+
 // [iron_util] base format function to print the log
 void LogMessage(LogT log_type, const char* file_name, int line, const char* fmt, ...);
 

@@ -86,6 +86,7 @@ typedef struct VertexBuffer {
 
 typedef struct DrawCall {
     size_t vertices_count;
+    unsigned int texture_id;
 } DrawCall;
 
 // all window and renderer state data
@@ -114,6 +115,10 @@ static struct {
         float frame_time;
         float update_time;
         float render_time;
+
+        int fps;
+        int fps_count;
+        float fps_time_counter;
     } Time;
 
     struct {
@@ -126,6 +131,7 @@ static struct {
         Texture default_texture;
         Font default_font;
 
+        Texture* current_texture;
         Mat4 projection;
     } RenderState;
 
@@ -151,7 +157,7 @@ static void FramebufferSizeCallback(GLFWwindow* window, int w, int h);
 // [iron_render_widnow]  clear and render current batch if vertex buffer is full or is end of this frame
 static void RenderCurrentBatch();
 // [iron_render_widnow] push/add vertex data into vertex buffer
-static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bottom_left, Color c);
+static void PushVertexData(Texture* texture, Rect rec, V2f top_right, V2f top_left, V2f bottom_right, V2f bottom_left, Color c);
 
 
 // ---------------------------------- //
@@ -203,6 +209,11 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     CONTEXT.Time.previous_time = (float)glfwGetTime();
     CONTEXT.Time.current_time = (float)glfwGetTime();
     CONTEXT.Time.target_time = (float)(1.0f / fps);
+
+    // fps
+    CONTEXT.Time.current_time = 0.0f;
+    CONTEXT.Time.fps_count = 0;
+    CONTEXT.Time.fps = 0;
 
     // 2D renderer
     // init glad
@@ -338,6 +349,8 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
 
 	glBindTexture(GL_TEXTURE_2D, 0);
     
+    // set current using texture
+    CONTEXT.RenderState.current_texture = &CONTEXT.RenderState.default_texture;
 
     // ResT load_tex = LoadTextureFile(&CONTEXT.RenderState.default_texture, "assets/kenney_animalpackredux/rabbit.png");
     // if (load_tex != RES_SUCCESS) {
@@ -474,6 +487,14 @@ void EndRendering() {
 
         CONTEXT.Time.frame_time += extra_time;
     }
+
+    CONTEXT.Time.fps_time_counter += CONTEXT.Time.frame_time;
+    CONTEXT.Time.fps_count += 1;
+    if (CONTEXT.Time.fps_time_counter >= 1.0f) {
+        CONTEXT.Time.fps_time_counter = 0.0f;
+        CONTEXT.Time.fps = CONTEXT.Time.fps_count;
+        CONTEXT.Time.fps_count = 0;
+    }
 }
 
 // ---------------------------------- //
@@ -596,8 +617,12 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
     bottom_left.y = v3.y + pos.y;
 
     // LogInfo("bottom left: %s", V2fToString(bottom_left));
-
-    PushVertexData(top_right, top_left, bottom_right, bottom_left, c);
+    Rect rec = {
+        0.0f, 0.0f,
+        CONTEXT.RenderState.default_texture.w, CONTEXT.RenderState.default_texture.h
+    };
+    
+    PushVertexData(&CONTEXT.RenderState.default_texture, rec, top_right, top_left, bottom_right, bottom_left, c);
 
 #if 0
     glBindVertexArray(CONTEXT.RenderState.vao);
@@ -643,7 +668,13 @@ void DrawLine(V2f p0, V2f p1, int thinkness, Color c) {
     V2f top_left = { p0.x + p.x, p0.y + p.y };
     V2f bottom_left = { p0.x - p.x, p0.y - p.y };
 
-    PushVertexData(top_right, top_left, bottom_right, bottom_left, c);
+    Rect rec = {
+        0.0f, 0.0f,
+        CONTEXT.RenderState.default_texture.w, CONTEXT.RenderState.default_texture.h
+    };
+    
+    PushVertexData(&CONTEXT.RenderState.default_texture, rec, top_right, top_left, bottom_right, bottom_left, c);
+
 }
 
 void DrawRectangleGrid(V2f pos, V2f sz, float angle, Color c) {
@@ -693,6 +724,51 @@ void DrawRectangleGrid(V2f pos, V2f sz, float angle, Color c) {
     DrawLine(top_right, bottom_right, 2, c);
     DrawLine(bottom_right, bottom_left, 2, c);
     DrawLine(bottom_left, top_left, 2, c);
+}
+
+void DrawText(const char* text, V2f pos, float sz, Color c) {
+    int len = strlen(text);
+	int letter = 0;
+	int index = 0;
+
+	int text_yoff = 0;
+	float text_xoff = 0.0f;
+	float scale = 0.0f;
+
+	for (int i = 0; i < len; i++) {
+		index = text[i] - 32;
+
+		if (text[i] == '\n') {
+			text_yoff += (CONTEXT.RenderState.default_font.base_height * sz);
+			text_xoff = 0.0f;
+		} else {
+			if (text[i] != ' ') {
+
+				V2f p = { 
+					pos.x + text_xoff + (CONTEXT.RenderState.default_font.chars[index].xoffset * sz),
+					pos.y + (float)text_yoff + (CONTEXT.RenderState.default_font.chars[index].yoffset * sz),
+				};
+
+				V2f top_right = { p.x + CONTEXT.RenderState.default_font.chars[index].rec.w * sz, p.y + CONTEXT.RenderState.default_font.chars[index].rec.h * sz };
+				V2f top_left = { .x = p.x, .y = p.y + CONTEXT.RenderState.default_font.chars[index].rec.h * sz };
+				V2f bottom_right = { .x = p.x + CONTEXT.RenderState.default_font.chars[index].rec.w * sz, .y = p.y };
+				V2f bottom_left = { .x = p.x, .y = p.y };
+
+				PushVertexData(&CONTEXT.RenderState.default_font.texture, CONTEXT.RenderState.default_font.chars[index].rec, top_right, top_left, bottom_right, bottom_left, c);
+			}
+
+			if (CONTEXT.RenderState.default_font.chars[index].xadvance == 0) {
+				text_xoff += (CONTEXT.RenderState.default_font.chars[index].rec.w + 2.0f) * sz;
+			} else {
+				text_xoff += (CONTEXT.RenderState.default_font.chars[index].xadvance + 2.0f) * sz;
+			}
+		}
+	}
+}
+
+void DrawFPS(V2f pos, float sz, Color c) {
+    const char* fps_text = StringFormat("FPS: %d", CONTEXT.Time.fps);
+    DrawText(fps_text, pos, sz, c);
 }
 
 // ---------------------------------- //
@@ -769,11 +845,11 @@ static void RenderCurrentBatch() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, CONTEXT.RenderState.vertex_buffer.vbo[3]);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, CONTEXT.RenderState.default_texture.id);
 
     // draw!!
     size_t vertex_offset = 0;
     for (size_t i = 0; i < CONTEXT.RenderState.draw_calls_count; i++) {
+        glBindTexture(GL_TEXTURE_2D, CONTEXT.RenderState.draw_calls[i].texture_id);
         glDrawElements(GL_TRIANGLES, (CONTEXT.RenderState.draw_calls[i].vertices_count / VERICES_PER_RECT * INDICES_PER_RECT), GL_UNSIGNED_INT, (const GLvoid*)(sizeof(unsigned int) * vertex_offset / VERICES_PER_RECT * INDICES_PER_RECT));
         vertex_offset += CONTEXT.RenderState.draw_calls[i].vertices_count;
         // LogInfo("Current draw %d, vertices count %d", (i + 1), CONTEXT.RenderState.draw_calls[i].vertices_count);
@@ -794,9 +870,30 @@ static void RenderCurrentBatch() {
 }
 
 // [iron_render_widnow] push/add vertex data into vertex buffer
-static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bottom_left, Color c) {
-    // clock-wise
+static void PushVertexData(Texture* texture, Rect rec, V2f top_right, V2f top_left, V2f bottom_right, V2f bottom_left, Color c) {
 
+    if (CONTEXT.RenderState.vertex_buffer.vertices_count >= (DEFAULT_MAX_RECT * VERICES_PER_RECT)) { // check vertex buffer is full
+        LogInfo("Vertex buffer capacity is max");
+        RenderCurrentBatch();
+    }
+
+    // check texture id from current draw call and vertex buffer
+    if (CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].texture_id != texture->id) {
+
+        // check is there any shapes are waiting to draw
+        if (CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count > 0) {
+            CONTEXT.RenderState.draw_calls_count += 1;
+        }
+
+        if (CONTEXT.RenderState.draw_calls_count >= MAX_DRAW_CALL_PER_FRAME) {
+            RenderCurrentBatch();
+        }
+
+        CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].texture_id = texture->id;
+        CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count = 0;
+    }
+
+    // clock-wise
     V4f color_v4 = ColorToVec4f(c);
 
     // top right
@@ -804,8 +901,8 @@ static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bo
 	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = top_right.y;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 1.0f;
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = (rec.x + rec.w) / texture->w;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = (rec.y + rec.h) / texture->h;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
@@ -821,8 +918,8 @@ static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bo
 	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = bottom_right.y;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 1.0f;
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = (rec.x + rec.w) / texture->w;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = rec.y / texture->h;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
@@ -838,8 +935,8 @@ static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bo
 	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = bottom_left.y;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 0.0f;
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 0.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = rec.x / texture->w;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = rec.y / texture->h;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
@@ -855,8 +952,8 @@ static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bo
 	CONTEXT.RenderState.vertex_buffer.vertices[CONTEXT.RenderState.vertex_buffer.vertices_count].y = top_left.y;
 	CONTEXT.RenderState.vertex_buffer.vertices_count += 1;
 
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = 0.0f;
-	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = 1.0f;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].x = rec.x / texture->w;
+	CONTEXT.RenderState.vertex_buffer.texcoords[CONTEXT.RenderState.vertex_buffer.texcoords_count].y = (rec.y + rec.h) / texture->h;
 	CONTEXT.RenderState.vertex_buffer.texcoords_count += 1;
 
 	CONTEXT.RenderState.vertex_buffer.colors[CONTEXT.RenderState.vertex_buffer.colors_count].r = color_v4.r;
@@ -870,8 +967,9 @@ static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bo
     // indices
     CONTEXT.RenderState.vertex_buffer.indices_count += 6;
 
+#if 0
     if (CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count >= (DEFAULT_MAX_RECT * VERICES_PER_RECT)) {
-        
+         
         LogInfo("Reached max count");
 
         // draw call array is full
@@ -883,4 +981,5 @@ static void PushVertexData(V2f top_right, V2f top_left, V2f bottom_right, V2f bo
         CONTEXT.RenderState.draw_calls_count += 1;
         CONTEXT.RenderState.draw_calls[CONTEXT.RenderState.draw_calls_count - 1].vertices_count = 0;
     }
+#endif
 }

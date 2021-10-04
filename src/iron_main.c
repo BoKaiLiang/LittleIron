@@ -27,6 +27,8 @@ int main() {
 
         BeginRednering(COLOR_PINK);
 
+            // DrawText("Hello, world!", V2F_ZERO, 1, COLOR_WHITE);
+
             DrawRectangle(pos, sz, 0.0f, COLOR_RED);
 
             DrawLine(p0, p1, 5, COLOR_PURPLE);
@@ -34,6 +36,8 @@ int main() {
             // DrawRectangleGrid(pos, sz, 0.0f, COLOR_GREEN);
 
             // DrawRectangleGrid(pos, sz, 0.0f, COLOR_GREEN);
+
+            DrawFPS(V2F_ZERO, 1, COLOR_WHITE);
 
         EndRendering();
     }
