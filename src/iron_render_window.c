@@ -365,6 +365,7 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
     }
 
     // TEST: print character data in font
+/*
     LogInfo("Create default texture, id: %d", CONTEXT.RenderState.default_font.texture.id);
     for (int i = 0; i < ASCII_CHAR_COUNT; i++) {
         char c = CONTEXT.RenderState.default_font.chars[i].unicode;
@@ -375,7 +376,7 @@ ResT CreateRenderWindow(int w, int h, const char* title, int fps) {
 
         LogInfo("Character: %c, rect = %s, xoffset = %d, yoffset = %d, xadvance = %d", c, RectToString(rec), xoffset, yoffset, xadvance);
     }
-
+*/
 
     // math... random
     srand((time_t)NULL);
@@ -579,8 +580,8 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
     Mat4 rotate_matrix = Mat4EulerRotate(MAT4_IDENTITY, angle);
 
     V2f top_right = V2F_ZERO;
-    top_right.x = sz.x / 2.0f;
-    top_right.y = sz.y / 2.0f;
+    top_right.x = sz.x;
+    top_right.y = sz.y;
     V4f v0 = { top_right.x, top_right.y, 0.0f, 1.0f };
     v0 = Mat4MulV4f(rotate_matrix, v0);
     top_right.x = v0.x + pos.x;
@@ -589,8 +590,8 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
     // LogInfo("top right: %s", V2fToString(top_right));
 
     V2f top_left = V2F_ZERO;
-    top_left.x = -sz.x / 2.0f;
-    top_left.y = sz.y / 2.0f;
+    top_left.x = 0.0f;
+    top_left.y = sz.y;
     V4f v1 = { top_left.x, top_left.y, 0.0f, 1.0f };
     v1 = Mat4MulV4f(rotate_matrix, v1);
     top_left.x = v1.x + pos.x;
@@ -599,8 +600,8 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
     // LogInfo("top left: %s", V2fToString(top_left));
 
     V2f bottom_right = V2F_ZERO;
-    bottom_right.x = sz.x / 2.0f;
-    bottom_right.y = -sz.y / 2.0f;
+    bottom_right.x = sz.x;
+    bottom_right.y = 0.0f;
     V4f v2 = { bottom_right.x, bottom_right.y, 0.0f, 1.0f };
     v2 = Mat4MulV4f(rotate_matrix, v2);
     bottom_right.x = v2.x + pos.x;
@@ -609,8 +610,8 @@ void DrawRectangle(V2f pos, V2f sz, float angle, Color c) {
     // LogInfo("bottom right: %s", V2fToString(bottom_right));
 
     V2f bottom_left = V2F_ZERO;
-    bottom_left.x = -sz.x / 2.0f;
-    bottom_left.y = -sz.y / 2.0f;
+    bottom_left.x = 0.0f;
+    bottom_left.y = 0.0f;
     V4f v3 = { bottom_left.x, bottom_left.y, 0.0f, 1.0f };
     v3 = Mat4MulV4f(rotate_matrix, v3);
     bottom_left.x = v3.x + pos.x;
@@ -681,8 +682,8 @@ void DrawRectangleGrid(V2f pos, V2f sz, float angle, Color c) {
     Mat4 rotate_matrix = Mat4EulerRotate(MAT4_IDENTITY, angle);
 
     V2f top_right = V2F_ZERO;
-    top_right.x = sz.x / 2.0f;
-    top_right.y = sz.y / 2.0f;
+    top_right.x = sz.x;
+    top_right.y = sz.y;
     V4f v0 = { top_right.x, top_right.y, 0.0f, 1.0f };
     v0 = Mat4MulV4f(rotate_matrix, v0);
     top_right.x = v0.x + pos.x;
@@ -691,8 +692,8 @@ void DrawRectangleGrid(V2f pos, V2f sz, float angle, Color c) {
     // LogInfo("top right: %s", V2fToString(top_right));
 
     V2f top_left = V2F_ZERO;
-    top_left.x = -sz.x / 2.0f;
-    top_left.y = sz.y / 2.0f;
+    top_left.x = 0.0f;
+    top_left.y = sz.y;
     V4f v1 = { top_left.x, top_left.y, 0.0f, 1.0f };
     v1 = Mat4MulV4f(rotate_matrix, v1);
     top_left.x = v1.x + pos.x;
@@ -701,8 +702,8 @@ void DrawRectangleGrid(V2f pos, V2f sz, float angle, Color c) {
     // LogInfo("top left: %s", V2fToString(top_left));
 
     V2f bottom_right = V2F_ZERO;
-    bottom_right.x = sz.x / 2.0f;
-    bottom_right.y = -sz.y / 2.0f;
+    bottom_right.x = sz.x;
+    bottom_right.y = 0.0f;
     V4f v2 = { bottom_right.x, bottom_right.y, 0.0f, 1.0f };
     v2 = Mat4MulV4f(rotate_matrix, v2);
     bottom_right.x = v2.x + pos.x;
@@ -711,8 +712,8 @@ void DrawRectangleGrid(V2f pos, V2f sz, float angle, Color c) {
     // LogInfo("bottom right: %s", V2fToString(bottom_right));
 
     V2f bottom_left = V2F_ZERO;
-    bottom_left.x = -sz.x / 2.0f;
-    bottom_left.y = -sz.y / 2.0f;
+    bottom_left.x = 0.0f;
+    bottom_left.y = 0.0f;
     V4f v3 = { bottom_left.x, bottom_left.y, 0.0f, 1.0f };
     v3 = Mat4MulV4f(rotate_matrix, v3);
     bottom_left.x = v3.x + pos.x;
