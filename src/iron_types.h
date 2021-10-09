@@ -288,4 +288,12 @@ typedef enum MouseButton {
     MAX_MOUSE_BUTTON,
 } MouseButton;
 
+typedef struct Entity {
+    V2f pos;
+    V2f sz;
+    V2f dir;
+    Rect rec;
+    V2f center_pos;
+} Entity;
+
 #endif // _IRON_TYPES_H_

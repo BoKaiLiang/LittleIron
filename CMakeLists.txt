@@ -19,6 +19,7 @@ add_executable( # 標記執行黨和原始碼
     src/iron_util.c
     src/iron_math.c
     src/iron_render_window.c
+    src/iron_entity.c
     src/iron_main.c
 )
 

@@ -17,16 +17,21 @@
 #define WINDOW_W 800
 #define WINDOW_H 600
 
+#define BLOCK_UNIT_SZ 40
 #define BLOCK_SZ ((V2f){40, 40})
 
 #define MAP_W (WINDOW_W / 40)
 #define MAP_H (WINDOW_H / 40)
 
+#define G 10.0f
+
+#define DEBUG_BLOCK_SZ ((V2f){ 3.0f, 3.0f })
+
 static bool DEBUG_MODE = true;
 
 static int G_MAP[MAP_H][MAP_W] = {
-    { 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-    { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
@@ -42,25 +47,11 @@ static int G_MAP[MAP_H][MAP_W] = {
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
 };
 
-static struct {
-    V2f pos;
-    V2f dir;
-    Color c;
-    V2f speed;
-} PLAYER;
-
-static void InitPlayer() {
-    PLAYER.pos.x = 2.0f;
-    PLAYER.pos.y= 9.0f;
-
-    PLAYER.dir.x = 1.0f;
-    PLAYER.dir.y = 0.0f;
-
-    PLAYER.c = COLOR_PURPLE;
-
-    PLAYER.speed.x = 5.0f;
-    PLAYER.speed.y = 0.0f;
-}
+static Entity player;
+static V2f player_speed;
+static Entity tiles[MAP_W * MAP_H];
+static bool tiles_collided[MAP_W * MAP_H];
+static int tiles_count = 0;
 
 int main() {
 
@@ -70,7 +61,26 @@ int main() {
         return init_res;
     }
 
-    InitPlayer();
+    // init player
+    V2f player_start_pos = { 2.0f, 10.0f };
+    player_start_pos = V2fScalef(player_start_pos, BLOCK_UNIT_SZ);
+    EntityCreate(&player, player_start_pos, BLOCK_SZ);
+    player_speed.x = 100.0f;
+    player_speed.y = 100.0f;
+    
+    // init tiles
+    for (int y = 0; y < MAP_H; y++) {
+        for (int x = 0; x < MAP_W; x++) {
+            if (G_MAP[y][x] == 1) {
+                tiles_count += 1;
+
+                V2f tile_pos = { x * BLOCK_UNIT_SZ, y * BLOCK_UNIT_SZ };
+                EntityCreate(&tiles[tiles_count - 1], tile_pos, BLOCK_SZ);
+
+                tiles_collided[tiles_count - 1] = false;
+            }
+        }
+    }
 
     while (IsWindowRunning()) {
         
@@ -86,56 +96,73 @@ int main() {
         }
 
         if (IsKeyPressed(KEY_R)) {
-            InitPlayer(); // reset player state
+            player.pos = player_start_pos;
+            EntityMoveOffset(&player, 0.0f, 0.0f); // reset player state
         }
 
         // movement
+        V2f movement_offset = V2F_ZERO;
         if (IsKeyDown(KEY_RIGHT)) {
-            PLAYER.dir.x = 1.0f;
-            PLAYER.pos.x += (PLAYER.dir.x * PLAYER.speed.x *dt);
+            movement_offset.x += player_speed.x * dt;
         }
 
         if (IsKeyDown(KEY_LEFT)) {
-            PLAYER.dir.x = -1.0f;
-            PLAYER.pos.x += (PLAYER.dir.x * PLAYER.speed.x *dt);
+            movement_offset.x -= player_speed.x * dt;
         }
+
+        // NOTE: move up, this is a test for collision
+        if (IsKeyDown(KEY_UP)) {
+            movement_offset.y -= player_speed.y * dt;
+        }
+
+        // NOTE: move down, this is a test for collision
+        if (IsKeyDown(KEY_DOWN)) {
+            movement_offset.y += player_speed.y * dt;
+        }
+
+        EntityMoveOffset(&player, movement_offset.x, movement_offset.y);
+
+        // collision detection
+        for (int i = 0; i < tiles_count; i++) {
+            tiles_collided[i] = false;
+            bool isCollided = EntityIsCollided(&player, &tiles[i]);
+            if (isCollided) {
+                LogInfo("Collided, player with index: %d", i);
+                tiles_collided[i] = true;;
+            }
+        }
+
 
         BeginRednering(COLOR_GRAY);
 
             // draw playground
+            int tile_index = 0;
             for (int y = 0; y < MAP_H; y++) {
                 for (int x = 0; x < MAP_W; x++) {
                     if (G_MAP[y][x] == 1) {
-                        // LogInfo("x = %d, y = %d", x, y);
-                        V2f pos = { x * 40, y * 40 };
-                        DrawRectangle(pos, BLOCK_SZ, 0.0f, COLOR_GREEN);
+                        DrawRectangle(tiles[tile_index].pos, tiles[tile_index].sz, 0.0f, COLOR_GREEN);
                         if (DEBUG_MODE) {
-                            DrawRectangleGrid(pos, BLOCK_SZ, 0.0f, COLOR_YELLOW);
+                            Color c = COLOR_WHITE;
+                            if (tiles_collided[tile_index])
+                                c = COLOR_RED;
+                            DrawRectangleGrid(tiles[tile_index].pos, BLOCK_SZ, 0.0f, c);
                         }
+
+                        tile_index += 1;
                     }
 
                 }
             }
 
             // draw player
-            V2f player_draw_pos = V2fScalef(PLAYER.pos, 40);
-            DrawRectangle(player_draw_pos, BLOCK_SZ, 0.0f, PLAYER.c);
+            DrawRectangle(player.pos, player.sz, 0.0f, COLOR_PURPLE);
             if (DEBUG_MODE) {
-                V2f p0;
-                p0.x = player_draw_pos.x + BLOCK_SZ.x / 2.0f;
-                p0.y = player_draw_pos.y + BLOCK_SZ.y / 2.0f;
+                DrawRectangleGrid(player.pos, player.sz, 0.0f, COLOR_WHITE);
+                V2f p0 = player.center_pos;
                 V2f p1;
-                p1.x = p0.x + PLAYER.dir.x * 20.0f;
-                p1.y = p0.y + PLAYER.dir.y * 20.0f;
-                DrawLine(p0, p1, 1, COLOR_WHITE);
-                DrawRectangleGrid(player_draw_pos, BLOCK_SZ, 0.0f, COLOR_WHITE);
-            }
-
-            if (DEBUG_MODE) {
-                const char* txt_player_pos = StringFormat("Player Pos: %s", V2fToString(PLAYER.pos));
-                DrawText(txt_player_pos, V2F_ZERO, 0.5f, COLOR_WHITE);
-                const char* txt_player_draw_pos = StringFormat("Player Draw Pos: %s", V2fToString(player_draw_pos));
-                DrawText(txt_player_draw_pos, (V2f){ 0.0f, 32.0f }, 0.5f, COLOR_WHITE);
+                p1.x = player.center_pos.x + (player.sz.x / 2.0f * player.dir.x);
+                p1.y = player.center_pos.y + (player.sz.y / 2.0f * player.dir.y);
+                DrawLine(p0, p1, 2, COLOR_WHITE);
             }
 
         EndRendering();
