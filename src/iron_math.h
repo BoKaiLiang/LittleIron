@@ -9,6 +9,10 @@
 int GetRandInt(int min, int max);
 float DegToRad(float degree);
 float RadToRad(float rad);
+int MaxInt(int a, int b);
+float MaxFloat(float a, float b);
+int MinInt(int a, int b);
+float MinFloat(float a, float b);
 
 // ---------------------------------- //
 //              Vector 2              //
@@ -17,6 +21,8 @@ float RadToRad(float rad);
 V2f V2fAdd(V2f a, V2f b);
 V2f V2fSub(V2f a, V2f b);
 V2f V2fScalef(V2f a, float f);
+V2f V2fMul(V2f a, V2f b);
+V2f V2fDiv(V2f a, V2f b);
 float V2fDot(V2f a, V2f b);
 float V2fLen(V2f v);
 V2f V2fNorm(V2f v);

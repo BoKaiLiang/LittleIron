@@ -7,6 +7,10 @@
 #define LogWarning(...) LogMessage(LOG_WARN, __FILE__, __LINE__, __VA_ARGS__);
 #define LogError(...) LogMessage(LOG_ERROR, __FILE__, __LINE__, __VA_ARGS__);
 
+void SwapInt(int* a, int* b);
+
+void SwapFloat(float* a, float* b);
+
 // [iron_util] get string
 const char* StringFormat(const char* fmt, ...);
 

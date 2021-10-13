@@ -16,6 +16,18 @@ static const char* LOG_LABELS[MAX_LOG_TYPE] = {
 static char STR_BUFFERS[MAX_BUFFERS_COUNT][MAX_BUFFFERS_CHAR_LEN] = { 0 };
 static int BUFFER_INDEX = 0;
 
+void SwapInt(int* a, int* b) {
+    int tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+void SwapFloat(float* a, float* b) {
+    float tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
 // [iron_util] get string
 const char* StringFormat(const char* fmt, ...) {
     char* curr_buffer = STR_BUFFERS[BUFFER_INDEX];

@@ -19,6 +19,22 @@ float RadToRad(float rad) {
     return rad * 180.0f / M_PI;
 }
 
+int MaxInt(int a, int b) {
+    return a > b ? a : b;
+}
+
+float MaxFloat(float a, float b) {
+    return a > b ? a : b;
+}
+
+int MinInt(int a, int b) {
+    return a < b ? a : b;
+}
+
+float MinFloat(float a, float b) {
+    return a < b ? a : b;
+}
+
 // ---------------------------------- //
 //              Vector 2              //
 // ---------------------------------- //
@@ -33,6 +49,14 @@ V2f V2fSub(V2f a, V2f b) {
 
 V2f V2fScalef(V2f a, float f) {
     return (V2f){ a.x * f, a.y * f };
+}
+
+V2f V2fMul(V2f a, V2f b) {
+    return (V2f){ a.x * b.x, a.y * b.y };
+}
+
+V2f V2fDiv(V2f a, V2f b) {
+    return (V2f){ a.x / b.x, a.y / b.y };
 }
 
 float V2fDot(V2f a, V2f b) {
