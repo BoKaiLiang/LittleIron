@@ -82,7 +82,8 @@ static bool RayVsRect(V2f ray_origin, V2f ray_dir, Entity target, V2f* contact_p
     if (near.x > far.y || near.y > far.x) return false;
 
     *hit_near = MaxFloat(near.x, near.y);
-    float hit_far = MinFloat(near.x, near.y);
+    float hit_far = MinFloat(far.x, far.y);
+    LogInfo("Far: %.2f", hit_far);
 
     if (hit_far < 0.0f) {
         return false;
@@ -92,19 +93,19 @@ static bool RayVsRect(V2f ray_origin, V2f ray_dir, Entity target, V2f* contact_p
 
     if (near.x > near.y) {
         if (invdir.x < 0) {
-            contact_point->x = 1.0f;
-            contact_point->y = 0.0f;
+            contact_norm->x = 1.0f;
+            contact_norm->y = 0.0f;
         } else {
-            contact_point->x = -1.0f;
-            contact_point->y = 0.0f;
+            contact_norm->x = -1.0f;
+            contact_norm->y = 0.0f;
         }
     } else if (near.x < near.y) {
         if (invdir.y < 0) {
-            contact_point->x = 0.0f;
-            contact_point->y = 1.0f;
+            contact_norm->x = 0.0f;
+            contact_norm->y = 1.0f;
         } else {
-            contact_point->x = 0.0f;
-            contact_point->y = -1.0f;
+            contact_norm->x = 0.0f;
+            contact_norm->y = -1.0f;
         }
     }
 
@@ -208,10 +209,11 @@ int main() {
 
             // why `hit_near <= 1.0f`
             if (RayVsRect(start_point, ray_dir, obstacle, &contact_point, &contact_norm, &hit_near) && hit_near <= 1.0f) {
-                c = COLOR_YELLOW;
+               is_hit = true;
             } else {
-                c = COLOR_WHITE;
+                is_hit = false;
             }
+            LogInfo("Near : %.2f", hit_near);
 
 #if 0
             // ------------- caluate ray vs rect -------------
@@ -330,16 +332,17 @@ int main() {
             if (start_point.x != 0.0f, start_point.y != 0.0f) {
                 DrawRectangle(start_point, (V2f){ 5.0f, 5.0f }, 0.0f, COLOR_BLUE);
                 DrawLine(start_point, end_point, 2, COLOR_BLUE);
-                DrawRectangleGrid(obstacle.pos, obstacle.sz, 0.0f, c);
+                // DrawRectangleGrid(obstacle.pos, obstacle.sz, 0.0f, c);
 
-                // Color c = COLOR_WHITE;
+                Color c = COLOR_WHITE;
                 if (is_hit) {
-                    // c = COLOR_RED;
-                    
-                    // DrawRectangle(contact_point, (V2f){ 10.0f, 10.0f }, 0.0f, COLOR_ORANGE);
-                    // V2f contact_point_end = (V2f){ contact_point.x + contact_norm.x * -10.0f, contact_point.y + contact_norm.y * -10.0f };
-                    // DrawLine(contact_point, contact_point_end, 2.0f, COLOR_PURPLE);
+                    c = COLOR_PURPLE;
+                    // DrawRectangle(contact_point, (V2f){ 5.0f, 5.0f }, 0.0f, COLOR_BLUE);
+                    V2f contact_point_end = { contact_point.x + contact_norm.x * 10.0f, contact_point.y + contact_norm.y * 10.0f };
+                    DrawLine(contact_point, contact_point_end, 2, COLOR_RED);
+                    LogInfo("Contact Point: %s", V2fToString(contact_point));
                 }
+                DrawRectangleGrid(obstacle.pos, obstacle.sz, 0.0f, c);
             }
 
         EndRendering();
