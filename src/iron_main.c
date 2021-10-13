@@ -53,6 +53,7 @@ static Entity tiles[MAP_W * MAP_H];
 static bool tiles_collided[MAP_W * MAP_H];
 static int tiles_count = 0;
 
+// this is copy from: https://github.com/OneLoneCoder/olcPixelGameEngine/blob/master/Videos/OneLoneCoder_PGE_Rectangles.cpp
 static bool RayVsRect(V2f ray_origin, V2f ray_dir, Entity target, V2f* contact_point, V2f* contact_norm, float* hit_near) {
     contact_norm->x = 0.0f;
     contact_norm->y = 0.0f;
