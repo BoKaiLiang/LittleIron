@@ -27,6 +27,7 @@ float V2fDot(V2f a, V2f b);
 float V2fLen(V2f v);
 V2f V2fNorm(V2f v);
 float V2fDist(V2f a, V2f b);
+V2f V2fAbs(V2f a);
 
 // ---------------------------------- //
 //              Matrix                //

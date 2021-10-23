@@ -93,8 +93,18 @@ typedef struct Mat4x4 {
 } Mat4;
 
 typedef struct Rect {
-    float x, y;
-    float w, h;
+    union {
+        struct {
+            float x, y;
+            float w, h;
+        };
+
+        struct {
+            V2f pos;
+            V2f sz;
+        };
+        
+    };
 } Rect;
 
 typedef enum ShaderAttribType {

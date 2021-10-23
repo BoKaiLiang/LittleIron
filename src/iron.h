@@ -1,6 +1,8 @@
 #ifndef _IRON_H_
 #define _IRON_H_
 
+#include <math.h>
+
 #include "iron_types.h"
 
 #include "iron_util.h"

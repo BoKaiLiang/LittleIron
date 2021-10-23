@@ -75,6 +75,10 @@ float V2fDist(V2f a, V2f b) {
     return sqrtf((b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y));
 }
 
+V2f V2fAbs(V2f a) {
+    return (V2f){ fabsf(a.x), fabsf(a.y) };
+}
+
 // ---------------------------------- //
 //              Matrix                //
 // ---------------------------------- //

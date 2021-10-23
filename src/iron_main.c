@@ -47,14 +47,12 @@ static int G_MAP[MAP_H][MAP_W] = {
     { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
 };
 
-static Entity player;
-static V2f player_speed;
-static Entity tiles[MAP_W * MAP_H];
+static Rect tiles[MAP_W * MAP_H];
 static bool tiles_collided[MAP_W * MAP_H];
 static int tiles_count = 0;
 
 // this is copy from: https://github.com/OneLoneCoder/olcPixelGameEngine/blob/master/Videos/OneLoneCoder_PGE_Rectangles.cpp
-static bool RayVsRect(V2f ray_origin, V2f ray_dir, Entity target, V2f* contact_point, V2f* contact_norm, float* hit_near) {
+static bool RayVsRect(V2f ray_origin, V2f ray_dir, Rect target, V2f* contact_point, V2f* contact_norm, float* hit_near) {
     contact_norm->x = 0.0f;
     contact_norm->y = 0.0f;
 
@@ -65,14 +63,15 @@ static bool RayVsRect(V2f ray_origin, V2f ray_dir, Entity target, V2f* contact_p
     invdir.x = 1.0f / ray_dir.x;
     invdir.y = 1.0f / ray_dir.y;
 
-    V2f near = V2fMul(V2fSub(target.pos, ray_origin), invdir);
-    V2f far = V2fMul(V2fSub((V2f){ target.pos.x + target.rec.w, target.pos.y + target.rec.h }, ray_origin), invdir);
+    V2f tar_pos = { target.x, target.y }; 
+    V2f near = V2fMul(V2fSub(tar_pos, ray_origin), invdir);
+    V2f far = V2fMul(V2fSub((V2f){ target.x + target.w, target.y + target.h }, ray_origin), invdir);
 
-    if (near.x == 0.0f || near.y == 0.0f) {
+    if (isnan(near.x) || isnan(near.y)) {
         return false;
     }
 
-    if (far.x == 0.0f || far.y == 0.0f) {
+    if (isnan(far.x) || isnan(far.y)) {
         return false;
     }
 
@@ -84,7 +83,6 @@ static bool RayVsRect(V2f ray_origin, V2f ray_dir, Entity target, V2f* contact_p
 
     *hit_near = MaxFloat(near.x, near.y);
     float hit_far = MinFloat(far.x, far.y);
-    LogInfo("Far: %.2f", hit_far);
 
     if (hit_far < 0.0f) {
         return false;
@@ -113,6 +111,27 @@ static bool RayVsRect(V2f ray_origin, V2f ray_dir, Entity target, V2f* contact_p
     return true;
 }
 
+static bool DyRectVsRect(Rect dy_rec, V2f speed, float dt, Rect static_rec, V2f* contact_point, V2f* contact_norm, float* hit_near) {
+
+    if (speed.x == 0.0f && speed.y == 0)
+        return false;
+
+    Rect expand_rec;
+    expand_rec.x = static_rec.x - dy_rec.w / 2.0f;
+    expand_rec.y = static_rec.y - dy_rec.h / 2.0f;
+    expand_rec.w = static_rec.w + dy_rec.w;
+    expand_rec.h = static_rec.h + dy_rec.h;
+
+    V2f dy_rec_center = { dy_rec.x + dy_rec.w / 2.0f, dy_rec.y + dy_rec.h / 2.0f };
+    V2f dir = V2fScalef(speed, dt);
+
+    if (RayVsRect(dy_rec_center, dir, expand_rec, contact_point, contact_norm, hit_near)) {
+        return (*hit_near) >= 0.0f && (*hit_near) < 1.0f;
+    }
+
+    return false;
+}
+
 int main() {
 
     ResT init_res = CreateRenderWindow(WINDOW_W, WINDOW_H, "LittleIron", 60);
@@ -121,13 +140,9 @@ int main() {
         return init_res;
     }
 
-    // init player
-    V2f player_start_pos = { 2.0f, 10.0f };
-    player_start_pos = V2fScalef(player_start_pos, BLOCK_UNIT_SZ);
-    EntityCreate(&player, player_start_pos, BLOCK_SZ);
-    player_speed.x = 100.0f;
-    player_speed.y = 100.0f;
-    
+    Rect player = { 200.0f, 100.0f, BLOCK_UNIT_SZ, BLOCK_UNIT_SZ };
+    Rect block = { 150.0f, 200.0f, 200.0f, 200.0f };
+
     // init tiles
     for (int y = 0; y < MAP_H; y++) {
         for (int x = 0; x < MAP_W; x++) {
@@ -135,26 +150,21 @@ int main() {
                 tiles_count += 1;
 
                 V2f tile_pos = { x * BLOCK_UNIT_SZ, y * BLOCK_UNIT_SZ };
-                EntityCreate(&tiles[tiles_count - 1], tile_pos, BLOCK_SZ);
+                tiles[tiles_count - 1].pos = tile_pos;
+                tiles[tiles_count - 1].sz = BLOCK_SZ;
+                LogInfo("Tile - %i: pos: %s, size: %s", tiles_count - 1, V2fToString(tiles[tiles_count - 1].pos), V2fToString(tiles[tiles_count - 1].sz));
 
                 tiles_collided[tiles_count - 1] = false;
             }
         }
     }
 
-    Entity obstacle;
-    EntityCreate(&obstacle, (V2f){ 200.0f, 200.0f }, V2fScalef(BLOCK_SZ, 3.0f));
+    V2f player_vel = V2F_ZERO;
 
-    // TEST!
-    V2f start_point = V2F_ZERO;
-    V2f end_point = V2F_ZERO;
-    V2f ray_dir;
-    V2f contact_point;
-    V2f contact_norm;
-    float hit_near;
-    bool is_hit = true;
-
-    Color c = COLOR_WHITE;
+    V2f contact_point = V2F_ZERO;
+    V2f contact_norm = V2F_ZERO;
+    float hit_near = 0.0f;
+    int jump = 1;
 
     while (IsWindowRunning()) {
         
@@ -169,183 +179,68 @@ int main() {
             DEBUG_MODE = !DEBUG_MODE;
         }
 
-        if (IsKeyPressed(KEY_R)) {
-            player.pos = player_start_pos;
-            EntityMoveOffset(&player, 0.0f, 0.0f); // reset player state
-        }
+        contact_point = V2F_ZERO;
+        contact_norm = V2F_ZERO;
+        hit_near = 0.0f;
 
-        // movement
-        V2f movement_offset = V2F_ZERO;
         if (IsKeyDown(KEY_RIGHT)) {
-            movement_offset.x += player_speed.x * dt;
+            player_vel.x = 300.0f;
+        } else if (IsKeyUp(KEY_RIGHT)) {
+            player_vel.x = 0.0f;
         }
 
         if (IsKeyDown(KEY_LEFT)) {
-            movement_offset.x -= player_speed.x * dt;
+            player_vel.x = -300.0f;
+        } else if (IsKeyUp(KEY_RIGHT)) {
+            player_vel.x = 0.0f;
         }
 
-        // NOTE: move up, this is a test for collision
-        if (IsKeyDown(KEY_UP)) {
-            movement_offset.y -= player_speed.y * dt;
-        }
+        player_vel.y += 300.0f * dt;
 
-        // NOTE: move down, this is a test for collision
-        if (IsKeyDown(KEY_DOWN)) {
-            movement_offset.y += player_speed.y * dt;
+        if (IsKeyDown(KEY_SPACE) && jump > 0) {
+            // LogInfo("Press jump");
+            jump = 0;
+            player_vel.y += -250.0f;
         }
-
-        if (IsKeyDown(KEY_F2)) {
-            start_point = V2F_ZERO;
-        }
-
-        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-            start_point = GetMousePosition();
-        }
-
-        EntityMoveOffset(&player, movement_offset.x, movement_offset.y);
         
-        if (start_point.x != 0.0f && start_point.y != 0.0f) {
-            end_point = GetMousePosition();
-            ray_dir = V2fSub(end_point, start_point);
+        int tile_index = 0;
+        for (int y = 0; y < MAP_H; y++) {
+            for (int x = 0; x < MAP_W; x++) {
+                if (G_MAP[y][x] == 1) {
+                    if (DyRectVsRect(player, player_vel, dt, tiles[tile_index], &contact_point, &contact_norm, &hit_near)) {
 
-            // why `hit_near <= 1.0f`
-            if (RayVsRect(start_point, ray_dir, obstacle, &contact_point, &contact_norm, &hit_near) && hit_near <= 1.0f) {
-               is_hit = true;
-            } else {
-                is_hit = false;
-            }
-            LogInfo("Near : %.2f", hit_near);
+                        V2f abs_vel = V2fAbs(player_vel);
+                        V2f move = V2fMul(contact_norm, abs_vel);
+                        player_vel.x += move.x * (1 - hit_near);
+                        player_vel.y += move.y * (1 - hit_near);
 
-#if 0
-            // ------------- caluate ray vs rect -------------
-            ray_dir = V2F_ZERO;
-            contact_point = V2F_ZERO;
-            contact_norm = V2F_ZERO;
-            hit_near = false;
-            is_hit = true;
-
-            ray_dir = V2fSub(end_point, start_point);
-
-            V2f min_pos = obstacle.pos;
-            V2f near = V2fSub(min_pos, start_point);
-            near.x /= ray_dir.x;
-            near.y /= ray_dir.y;
-
-            V2f max_pos = { obstacle.pos.x + obstacle.rec.w, obstacle.pos.y + obstacle.rec.h };
-            V2f far = V2fSub( max_pos, start_point);
-            far.x /= ray_dir.x;
-            far.y /= ray_dir.y;
-
-            if (near.x > far.x) {
-                float tmp = near.x;
-                near.x = far.x;
-                far.x = tmp;
-            }
-
-            if (near.y > far.y) {
-                float tmp = near.y;
-                near.y = far.y;
-                far.y = tmp;
-            }
-
-            if (near.x > far.y || near.y > far.x) {
-                is_hit = false;
-            }
-
-            if (near.x > near.y) {
-                hit_near = near.x;
-            } else {
-                hit_near = near.y;
-            }
-
-            contact_point = V2fAdd(V2fScalef(ray_dir, hit_near), start_point);
-
-            if (near.x > near.y) {
-                if (ray_dir.x < 0.0f) {
-                    contact_norm.x = 1.0f;
-                    contact_norm.y = 0.0f;
-                } else {
-                    contact_norm.x = -1.0f;
-                    contact_norm.y = 0.0f;
+                        if (player_vel.y == 0) {
+                            jump = 1;
+                            // LogInfo("Can jump");
+                        }
+                    }
+                    tile_index += 1;
                 }
-            } else if (near.x < near.y) {
-                if (ray_dir.x < 0.0f) {
-                    contact_norm.x = 0.0f;
-                    contact_norm.y = -1.0f;
-                } else {
-                    contact_norm.x = 0.0f;
-                    contact_norm.y = 1.0f;
-                }
-            }
-
-            if (hit_near > 1.0f) {
-                is_hit = false;
-            }
-            // ------------- end -------------
-#endif
-        }
-
-        // collision detection
-        for (int i = 0; i < tiles_count; i++) {
-            tiles_collided[i] = false;
-            bool isCollided = EntityIsCollided(&player, &tiles[i]);
-            if (isCollided) {
-                LogInfo("Collided, player with index: %d", i);
-                tiles_collided[i] = true;;
             }
         }
 
+        player.pos = V2fAdd(player.pos, V2fScalef(player_vel, dt));
 
         BeginRednering(COLOR_GRAY);
 
-            // draw playground
-            int tile_index = 0;
+            // DrawRectangle(block.pos, block.sz, 00.0f, COLOR_WHITE);
+            tile_index = 0;
             for (int y = 0; y < MAP_H; y++) {
                 for (int x = 0; x < MAP_W; x++) {
                     if (G_MAP[y][x] == 1) {
                         DrawRectangle(tiles[tile_index].pos, tiles[tile_index].sz, 0.0f, COLOR_GREEN);
-                        if (DEBUG_MODE) {
-                            Color c = COLOR_WHITE;
-                            if (tiles_collided[tile_index])
-                                c = COLOR_RED;
-                            DrawRectangleGrid(tiles[tile_index].pos, BLOCK_SZ, 0.0f, c);
-                        }
-
                         tile_index += 1;
                     }
-
                 }
             }
 
-            // draw player
-            DrawRectangle(player.pos, player.sz, 0.0f, COLOR_PURPLE);
-            if (DEBUG_MODE) {
-                DrawRectangleGrid(player.pos, player.sz, 0.0f, COLOR_WHITE);
-                V2f p0 = player.center_pos;
-                V2f p1;
-                p1.x = player.center_pos.x + (player.sz.x / 2.0f * player.dir.x);
-                p1.y = player.center_pos.y + (player.sz.y / 2.0f * player.dir.y);
-                DrawLine(p0, p1, 2, COLOR_WHITE);
-            }
-
-            DrawRectangle(obstacle.pos, obstacle.sz, 0.0f, COLOR_WHITE);
-
-            if (start_point.x != 0.0f, start_point.y != 0.0f) {
-                DrawRectangle(start_point, (V2f){ 5.0f, 5.0f }, 0.0f, COLOR_BLUE);
-                DrawLine(start_point, end_point, 2, COLOR_BLUE);
-                // DrawRectangleGrid(obstacle.pos, obstacle.sz, 0.0f, c);
-
-                Color c = COLOR_WHITE;
-                if (is_hit) {
-                    c = COLOR_PURPLE;
-                    // DrawRectangle(contact_point, (V2f){ 5.0f, 5.0f }, 0.0f, COLOR_BLUE);
-                    V2f contact_point_end = { contact_point.x + contact_norm.x * 10.0f, contact_point.y + contact_norm.y * 10.0f };
-                    DrawLine(contact_point, contact_point_end, 2, COLOR_RED);
-                    LogInfo("Contact Point: %s", V2fToString(contact_point));
-                }
-                DrawRectangleGrid(obstacle.pos, obstacle.sz, 0.0f, c);
-            }
-
+            DrawRectangle(player.pos, player.sz, 00.0f, COLOR_PURPLE);
+        
         EndRendering();
     }
 
