@@ -1,6 +1,6 @@
 # cmake的註解是從'#'開始的
 
-cmake_minimum_required(VERSION 3.1) # --- 最低版本 ---
+cmake_minimum_required(VERSION 3.10) # --- 最低版本 ---
 project(LittleIron) # --- 專案名稱 ---
 
 #變數所有src資料夾中的source files
@@ -13,8 +13,10 @@ set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
+set(TARGET LittleIron)
+
 add_executable( # 標記執行黨和原始碼
-    LittleIron
+    ${TARGET}
     src/iron_asset.c
     src/iron_util.c
     src/iron_math.c
@@ -36,4 +38,23 @@ endif()
 target_link_libraries( # 與glfw lib進行連接
     LittleIron
     glfw
+)
+
+# Copy assets file to build directory
+set(ASSETS_SRC "${CMAKE_SOURCE_DIR}/assets")
+set(ASSETS_DST "$<TARGET_FILE_DIR:${TARGET}>/assets")
+if (WIN32)
+    set(ASSETS_CMD copy_directory)
+    set(ASSETS_MSG "Copy assets")
+endif()
+
+add_custom_command(
+    TARGET ${TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E echo
+    "${ASSETS_MSG}: ${ASSETS_SRC} to ${ASSETS_DST}"
+)
+add_custom_command(
+    TARGET ${TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E ${ASSETS_CMD}
+    "${ASSETS_SRC}" "${ASSETS_DST}"
 )
